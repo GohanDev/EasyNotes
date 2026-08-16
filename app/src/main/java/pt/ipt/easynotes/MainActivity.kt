@@ -56,10 +56,11 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
+
                     composable("editor") {
                         NoteEditorScreen(
                             viewModel = viewModel,
-                            onNoteSaved = {
+                            onBack = {
                                 navController.popBackStack()
                             }
                         )
@@ -74,7 +75,7 @@ class MainActivity : ComponentActivity() {
                         NoteEditorScreen(
                             viewModel = viewModel,
                             noteId = noteId,
-                            onNoteSaved = {
+                            onBack = {
                                 navController.popBackStack()
                             }
                         )

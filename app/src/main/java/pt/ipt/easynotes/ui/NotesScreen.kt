@@ -23,10 +23,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.text.style.TextOverflow
 import pt.ipt.easynotes.data.Note
 import androidx.compose.foundation.clickable
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
     viewModel: NotesViewModel,
@@ -37,6 +40,16 @@ fun NotesScreen(
     val notes by viewModel.notes.collectAsStateWithLifecycle()
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.app_name)
+                    )
+                }
+            )
+        },
+
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddNote
