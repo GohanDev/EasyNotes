@@ -4,8 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import pt.ipt.easynotes.data.NotesDatabase
 import pt.ipt.easynotes.data.NotesRepository
+import pt.ipt.easynotes.ui.NoteEditorScreen
 import pt.ipt.easynotes.ui.NotesScreen
 import pt.ipt.easynotes.ui.NotesViewModel
 import pt.ipt.easynotes.ui.NotesViewModelFactory
@@ -33,9 +37,31 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             EasyNotesTheme {
-                NotesScreen(
-                    viewModel = viewModel
-                )
+
+                val navController = rememberNavController()
+
+                NavHost(
+                    navController = navController,
+                    startDestination = "notes"
+                ) {
+
+                    composable("notes") {
+                        NotesScreen(
+                            viewModel = viewModel,
+                            onAddNote = {
+                                navController.navigate("editor")
+                            }
+                        )
+                    }
+                    composable("editor") {
+                        NoteEditorScreen(
+                            viewModel = viewModel,
+                            onNoteSaved = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
             }
         }
     }

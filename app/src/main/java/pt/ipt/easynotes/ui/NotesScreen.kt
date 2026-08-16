@@ -21,7 +21,8 @@ import pt.ipt.easynotes.R
 
 @Composable
 fun NotesScreen(
-    viewModel: NotesViewModel
+    viewModel: NotesViewModel,
+    onAddNote: () -> Unit
 ) {
 
     val notes by viewModel.notes.collectAsStateWithLifecycle()
@@ -29,9 +30,7 @@ fun NotesScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    // Mais tarde vamos abrir o ecrã de criar nota
-                }
+                onClick = onAddNote
             ) {
                 Text("+")
             }
