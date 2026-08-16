@@ -50,12 +50,30 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel,
                             onAddNote = {
                                 navController.navigate("editor")
+                            },
+                            onNoteClick = { noteId ->
+                                navController.navigate("editor/$noteId")
                             }
                         )
                     }
                     composable("editor") {
                         NoteEditorScreen(
                             viewModel = viewModel,
+                            onNoteSaved = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable("editor/{noteId}") { backStackEntry ->
+
+                        val noteId = backStackEntry.arguments
+                            ?.getString("noteId")
+                            ?.toIntOrNull()
+
+                        NoteEditorScreen(
+                            viewModel = viewModel,
+                            noteId = noteId,
                             onNoteSaved = {
                                 navController.popBackStack()
                             }

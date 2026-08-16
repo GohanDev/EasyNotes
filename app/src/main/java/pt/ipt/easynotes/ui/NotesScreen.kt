@@ -18,12 +18,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pt.ipt.easynotes.R
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.style.TextOverflow
+import pt.ipt.easynotes.data.Note
+import androidx.compose.foundation.clickable
 
 @Composable
 fun NotesScreen(
     viewModel: NotesViewModel,
-    onAddNote: () -> Unit
-) {
+    onAddNote: () -> Unit,
+    onNoteClick: (Int) -> Unit
+){
 
     val notes by viewModel.notes.collectAsStateWithLifecycle()
 
@@ -66,11 +75,52 @@ fun NotesScreen(
 
                 items(notes) { note ->
 
-                    Text(
-                        text = note.title,
-                        modifier = Modifier.padding(8.dp)
+                    NoteCard(
+                        note = note,
+                        onClick = {
+                            onNoteClick(note.id)
+                        }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun NoteCard(
+    note: Note,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            }
+    ) {
+
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+
+            Text(
+                text = note.title,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            if (note.content.isNotBlank()) {
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                Text(
+                    text = note.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

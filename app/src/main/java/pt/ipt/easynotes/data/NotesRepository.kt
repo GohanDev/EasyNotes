@@ -19,4 +19,9 @@ class NotesRepository(
     suspend fun deleteNote(note: Note) {
         noteDao.deleteNote(note)
     }
+
+    suspend fun getNoteById(id: Int): Note? {
+        return noteDao.getNoteById(id)
+    }
+
 }

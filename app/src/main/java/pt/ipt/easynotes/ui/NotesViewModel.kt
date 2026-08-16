@@ -31,9 +31,23 @@ class NotesViewModel(
         }
     }
 
-    fun updateNote(note: Note) {
+    fun updateNote(
+        id: Int,
+        title: String,
+        content: String
+    ) {
         viewModelScope.launch {
-            repository.updateNote(note)
+
+            val note = repository.getNoteById(id)
+
+            if (note != null) {
+                repository.updateNote(
+                    note.copy(
+                        title = title,
+                        content = content
+                    )
+                )
+            }
         }
     }
 
@@ -42,4 +56,9 @@ class NotesViewModel(
             repository.deleteNote(note)
         }
     }
+
+    suspend fun getNoteById(id: Int): Note? {
+        return repository.getNoteById(id)
+    }
+
 }

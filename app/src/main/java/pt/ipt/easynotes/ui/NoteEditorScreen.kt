@@ -18,10 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.ipt.easynotes.R
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun NoteEditorScreen(
     viewModel: NotesViewModel,
+    noteId: Int? = null,
     onNoteSaved: () -> Unit
 ) {
 
@@ -31,6 +33,17 @@ fun NoteEditorScreen(
 
     var content by remember {
         mutableStateOf("")
+    }
+
+    LaunchedEffect(noteId) {
+        if (noteId != null) {
+            val note = viewModel.getNoteById(noteId)
+
+            if (note != null) {
+                title = note.title
+                content = note.content
+            }
+        }
     }
 
     Column(
@@ -85,10 +98,21 @@ fun NoteEditorScreen(
 
         Button(
             onClick = {
-                viewModel.addNote(
-                    title = title,
-                    content = content
-                )
+                if (noteId == null) {
+
+                    viewModel.addNote(
+                        title = title,
+                        content = content
+                    )
+
+                } else {
+
+                    viewModel.updateNote(
+                        id = noteId,
+                        title = title,
+                        content = content
+                    )
+                }
 
                 onNoteSaved()
             },
