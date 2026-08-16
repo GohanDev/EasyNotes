@@ -15,4 +15,8 @@
 
     <string name="no_notes">Ainda não tem notas</string>
     <string name="no_notes_description">Crie a sua primeira nota.</string>
+
+    <string name="delete_note">Apagar nota</string>
+    <string name="delete_note_confirmation">Tem a certeza de que quer apagar esta nota?</string>
+    <string name="cancel">Cancelar</string>
 </resources>

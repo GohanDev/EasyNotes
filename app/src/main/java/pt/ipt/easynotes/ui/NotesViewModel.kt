@@ -61,4 +61,15 @@ class NotesViewModel(
         return repository.getNoteById(id)
     }
 
+    fun deleteNoteById(id: Int) {
+        viewModelScope.launch {
+
+            val note = repository.getNoteById(id)
+
+            if (note != null) {
+                repository.deleteNote(note)
+            }
+        }
+    }
+
 }

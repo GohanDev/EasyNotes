@@ -19,6 +19,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.ipt.easynotes.R
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @Composable
 fun NoteEditorScreen(
@@ -33,6 +35,10 @@ fun NoteEditorScreen(
 
     var content by remember {
         mutableStateOf("")
+    }
+
+    var showDeleteDialog by remember {
+        mutableStateOf(false)
     }
 
     LaunchedEffect(noteId) {
@@ -53,7 +59,13 @@ fun NoteEditorScreen(
     ) {
 
         Text(
-            text = stringResource(R.string.new_note)
+            text = stringResource(
+                if (noteId == null) {
+                    R.string.new_note
+                } else {
+                    R.string.edit_note
+                }
+            )
         )
 
         Spacer(
@@ -96,6 +108,24 @@ fun NoteEditorScreen(
             modifier = Modifier.height(16.dp)
         )
 
+        if (noteId != null) {
+
+            Button(
+                onClick = {
+                    showDeleteDialog = true
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.delete)
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+        }
+
         Button(
             onClick = {
                 if (noteId == null) {
@@ -122,5 +152,51 @@ fun NoteEditorScreen(
                 text = stringResource(R.string.save)
             )
         }
+    }
+    if (showDeleteDialog && noteId != null) {
+
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
+
+            title = {
+                Text(
+                    text = stringResource(R.string.delete_note)
+                )
+            },
+
+            text = {
+                Text(
+                    text = stringResource(R.string.delete_note_confirmation)
+                )
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteNoteById(noteId)
+                        showDeleteDialog = false
+                        onNoteSaved()
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete)
+                    )
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.cancel)
+                    )
+                }
+            }
+        )
     }
 }
