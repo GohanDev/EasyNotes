@@ -46,6 +46,14 @@ fun NoteEditorScreen(
         mutableStateOf(false)
     }
 
+    var titleError by remember {
+        mutableStateOf(false)
+    }
+
+    var contentError by remember {
+        mutableStateOf(false)
+    }
+
     LaunchedEffect(noteId) {
         if (noteId != null) {
             val note = viewModel.getNoteById(noteId)
@@ -81,12 +89,24 @@ fun NoteEditorScreen(
             value = title,
             onValueChange = {
                 title = it
+                titleError = false
             },
+            isError = titleError,
+
             label = {
                 Text(
                     text = stringResource(R.string.title)
                 )
             },
+
+            supportingText = {
+                if (titleError) {
+                    Text(
+                        text = stringResource(R.string.title_required)
+                    )
+                }
+            },
+
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -98,12 +118,24 @@ fun NoteEditorScreen(
             value = content,
             onValueChange = {
                 content = it
+                contentError = false
             },
+            isError = contentError,
+
             label = {
                 Text(
                     text = stringResource(R.string.content)
                 )
             },
+
+            supportingText = {
+                if (contentError) {
+                    Text(
+                        text = stringResource(R.string.content_required)
+                    )
+                }
+            },
+
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -134,6 +166,14 @@ fun NoteEditorScreen(
 
             Button(
                 onClick = {
+
+                    titleError = title.isBlank()
+                    contentError = content.isBlank()
+
+                    if (titleError || contentError) {
+                        return@Button
+                    }
+
                     if (noteId == null) {
 
                         viewModel.addNote(
