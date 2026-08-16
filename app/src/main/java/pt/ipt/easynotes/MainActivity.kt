@@ -3,45 +3,40 @@ package pt.ipt.easynotes
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
+import pt.ipt.easynotes.data.NotesDatabase
+import pt.ipt.easynotes.data.NotesRepository
+import pt.ipt.easynotes.ui.NotesScreen
+import pt.ipt.easynotes.ui.NotesViewModel
+import pt.ipt.easynotes.ui.NotesViewModelFactory
 import pt.ipt.easynotes.ui.theme.EasyNotesTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        val database = NotesDatabase.getDatabase(this)
+
+        val repository = NotesRepository(
+            database.noteDao()
+        )
+
+        val viewModelFactory = NotesViewModelFactory(
+            repository
+        )
+
+        val viewModel = ViewModelProvider(
+            this,
+            viewModelFactory
+        )[NotesViewModel::class.java]
+
         setContent {
             EasyNotesTheme {
-                Scaffold( modifier = Modifier.fillMaxSize() ) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                NotesScreen(
+                    viewModel = viewModel
+                )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    EasyNotesTheme {
-        Greeting("Android")
     }
 }
