@@ -14,6 +14,7 @@ import pt.ipt.easynotes.ui.NotesScreen
 import pt.ipt.easynotes.ui.NotesViewModel
 import pt.ipt.easynotes.ui.NotesViewModelFactory
 import pt.ipt.easynotes.ui.theme.EasyNotesTheme
+import pt.ipt.easynotes.ui.AboutScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -53,6 +54,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onNoteClick = { noteId ->
                                 navController.navigate("editor/$noteId")
+                            },
+                            onAboutClick = {
+                                navController.navigate("about")
                             }
                         )
                     }
@@ -75,6 +79,14 @@ class MainActivity : ComponentActivity() {
                         NoteEditorScreen(
                             viewModel = viewModel,
                             noteId = noteId,
+                            onBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable("about") {
+                        AboutScreen(
                             onBack = {
                                 navController.popBackStack()
                             }

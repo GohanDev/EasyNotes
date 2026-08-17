@@ -28,13 +28,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.text.style.TextOverflow
 import pt.ipt.easynotes.data.Note
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
     viewModel: NotesViewModel,
     onAddNote: () -> Unit,
-    onNoteClick: (Int) -> Unit
+    onNoteClick: (Int) -> Unit,
+    onAboutClick: () -> Unit
 ){
 
     val notes by viewModel.notes.collectAsStateWithLifecycle()
@@ -46,6 +48,15 @@ fun NotesScreen(
                     Text(
                         text = stringResource(R.string.app_name)
                     )
+                },
+                actions = {
+                    TextButton(
+                        onClick = onAboutClick
+                    ) {
+                        Text(
+                            text = stringResource(R.string.about)
+                        )
+                    }
                 }
             )
         },

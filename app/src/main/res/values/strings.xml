@@ -22,4 +22,19 @@
 
     <string name="title_required">O título é obrigatório.</string>
     <string name="content_required">O conteúdo da nota é obrigatório.</string>
+
+    <string name="about">Sobre</string>
+    <string name="course">Licenciatura em Engenharia Informática</string>
+    <string name="subject">Desenvolvimento de Aplicações Móveis</string>
+    <string name="school_year">Ano letivo 2025/26</string>
+
+    <string name="author">Autor</string>
+    <string name="author_number">Número: 24706</string>
+    <string name="author_name">Nome: Bruno Alves</string>
+
+    <string name="technologies">Tecnologias e Bibliotecas</string>
+    <string name="technology_kotlin">Kotlin</string>
+    <string name="technology_compose">Jetpack Compose</string>
+    <string name="technology_room">Room</string>
+    <string name="technology_navigation">Navigation Compose</string>
 </resources>
