@@ -20,11 +20,16 @@ class NotesViewModel(
             initialValue = emptyList()
         )
 
-    fun addNote(title: String, content: String) {
+    fun addNote(
+        title: String,
+        content: String,
+        photoPath: String? = null
+    ) {
         viewModelScope.launch {
             val note = Note(
                 title = title,
-                content = content
+                content = content,
+                photoPath = photoPath
             )
 
             repository.insertNote(note)
@@ -34,7 +39,8 @@ class NotesViewModel(
     fun updateNote(
         id: Int,
         title: String,
-        content: String
+        content: String,
+        photoPath: String? = null
     ) {
         viewModelScope.launch {
 
@@ -44,7 +50,8 @@ class NotesViewModel(
                 repository.updateNote(
                     note.copy(
                         title = title,
-                        content = content
+                        content = content,
+                        photoPath = photoPath
                     )
                 )
             }

@@ -26,6 +26,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.ipt.easynotes.R
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import java.io.File
+import java.io.FileOutputStream
+import android.graphics.BitmapFactory
 
 @Composable
 fun NoteEditorScreen(
@@ -46,6 +58,49 @@ fun NoteEditorScreen(
         mutableStateOf(false)
     }
 
+    var photoBitmap by remember {
+        mutableStateOf<Bitmap?>(null)
+    }
+
+    var photoPath by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    val context = LocalContext.current
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+
+        if (bitmap != null) {
+
+            photoBitmap = bitmap
+
+            val file = File(
+                context.filesDir,
+                "note_photo_${System.currentTimeMillis()}.jpg"
+            )
+
+            FileOutputStream(file).use { outputStream ->
+                bitmap.compress(
+                    Bitmap.CompressFormat.JPEG,
+                    90,
+                    outputStream
+                )
+            }
+
+            photoPath = file.absolutePath
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        }
+    }
+
     var titleError by remember {
         mutableStateOf(false)
     }
@@ -61,6 +116,11 @@ fun NoteEditorScreen(
             if (note != null) {
                 title = note.title
                 content = note.content
+                photoPath = note.photoPath
+
+                if (note.photoPath != null) {
+                    photoBitmap = BitmapFactory.decodeFile(note.photoPath)
+                }
             }
         }
     }
@@ -145,6 +205,48 @@ fun NoteEditorScreen(
             modifier = Modifier.height(16.dp)
         )
 
+        Button(
+            onClick = {
+                val hasCameraPermission =
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.CAMERA
+                    ) == PackageManager.PERMISSION_GRANTED
+
+                if (hasCameraPermission) {
+                    cameraLauncher.launch(null)
+                } else {
+                    permissionLauncher.launch(
+                        Manifest.permission.CAMERA
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = stringResource(R.string.take_photo)
+            )
+        }
+
+        photoBitmap?.let { bitmap ->
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = stringResource(R.string.take_photo),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+            )
+        }
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -178,7 +280,8 @@ fun NoteEditorScreen(
 
                         viewModel.addNote(
                             title = title,
-                            content = content
+                            content = content,
+                            photoPath = photoPath
                         )
 
                     } else {
@@ -186,7 +289,8 @@ fun NoteEditorScreen(
                         viewModel.updateNote(
                             id = noteId,
                             title = title,
-                            content = content
+                            content = content,
+                            photoPath = photoPath
                         )
                     }
 

@@ -37,4 +37,8 @@
     <string name="technology_compose">Jetpack Compose — developer.android.com/compose</string>
     <string name="technology_room">Room — developer.android.com/training/data-storage/room</string>
     <string name="technology_navigation">Navigation Compose — developer.android.com/develop/ui/compose/navigation</string>
+
+    <string name="take_photo">Tirar fotografia</string>
+    <string name="camera_permission_required">É necessário permitir o acesso à câmara.</string>
+    
 </resources>
