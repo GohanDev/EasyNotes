@@ -33,8 +33,8 @@
     <string name="author_name">Nome: Bruno Alves</string>
 
     <string name="technologies">Tecnologias e Bibliotecas</string>
-    <string name="technology_kotlin">Kotlin</string>
-    <string name="technology_compose">Jetpack Compose</string>
-    <string name="technology_room">Room</string>
-    <string name="technology_navigation">Navigation Compose</string>
+    <string name="technology_kotlin">Kotlin — kotlinlang.org</string>
+    <string name="technology_compose">Jetpack Compose — developer.android.com/compose</string>
+    <string name="technology_room">Room — developer.android.com/training/data-storage/room</string>
+    <string name="technology_navigation">Navigation Compose — developer.android.com/develop/ui/compose/navigation</string>
 </resources>
