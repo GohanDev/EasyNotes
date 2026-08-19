@@ -40,5 +40,7 @@
 
     <string name="take_photo">Tirar fotografia</string>
     <string name="camera_permission_required">É necessário permitir o acesso à câmara.</string>
+
+    <string name="note_photo">Fotografia da nota</string>
     
 </resources>

@@ -29,6 +29,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import pt.ipt.easynotes.data.Note
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.TextButton
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.window.Dialog
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.aspectRatio
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,6 +128,11 @@ fun NoteCard(
     note: Note,
     onClick: () -> Unit
 ) {
+
+    var showPhoto by remember {
+        mutableStateOf(false)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,26 +141,81 @@ fun NoteCard(
             }
     ) {
 
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
 
-            Text(
-                text = note.title,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            if (note.content.isNotBlank()) {
-
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
 
                 Text(
-                    text = note.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    text = note.title,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                if (note.content.isNotBlank()) {
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text = note.content,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            if (note.photoPath != null) {
+
+                val bitmap = BitmapFactory.decodeFile(note.photoPath)
+
+                if (bitmap != null) {
+
+                    Spacer(
+                        modifier = Modifier.width(12.dp)
+                    )
+
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.note_photo),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clickable {
+                                showPhoto = true
+                            }
+                    )
+                }
+            }
+        }
+    }
+    if (showPhoto && note.photoPath != null) {
+
+        val largeBitmap = BitmapFactory.decodeFile(note.photoPath)
+
+        if (largeBitmap != null) {
+
+            Dialog(
+                onDismissRequest = {
+                    showPhoto = false
+                }
+            ) {
+                Image(
+                    bitmap = largeBitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.note_photo),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(
+                            largeBitmap.width.toFloat() /
+                                    largeBitmap.height.toFloat()
+                        )
                 )
             }
         }
