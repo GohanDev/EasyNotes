@@ -41,6 +41,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.LaunchedEffect
+import pt.ipt.easynotes.network.HealthService
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +61,73 @@ fun NotesScreen(
 
     val notes by viewModel.notes.collectAsStateWithLifecycle()
 
+    var apiStatus by remember {
+        mutableStateOf("A verificar API...")
+    }
+
+    val context = LocalContext.current
+
+    val localNetworkPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+
+            if (isGranted) {
+
+                apiStatus = "Permissão concedida. Reinicia a app."
+
+            } else {
+
+                apiStatus = "Acesso à rede local recusado."
+            }
+        }
+
+    LaunchedEffect(Unit) {
+
+        val hasLocalNetworkPermission =
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_LOCAL_NETWORK
+            ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasLocalNetworkPermission) {
+
+            apiStatus = try {
+
+                val response = HealthService.checkHealth()
+
+                if (response.status == "ok") {
+                    "API ligada"
+                } else {
+                    "API com problema"
+                }
+
+            } catch (e: Exception) {
+                "Erro: ${e.message}"
+            }
+
+        } else {
+
+            localNetworkPermissionLauncher.launch(
+                Manifest.permission.ACCESS_LOCAL_NETWORK
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.app_name)
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.app_name)
+                        )
+
+                        Text(
+                            text = apiStatus,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 },
                 actions = {
                     TextButton(

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -49,6 +50,10 @@ dependencies {
     implementation("androidx.room:room-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation("androidx.navigation:navigation-compose:2.9.5")
+    implementation("io.ktor:ktor-client-core:3.5.0")
+    implementation("io.ktor:ktor-client-okhttp:3.5.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.5.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.0")
     ksp("androidx.room:room-compiler:2.8.4")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
