@@ -1,0 +1,125 @@
+package pt.ipt.easynotes.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import pt.ipt.easynotes.data.AuthRepository
+import pt.ipt.easynotes.network.UserResponse
+
+data class AuthUiState(
+    val isLoading: Boolean = false,
+    val token: String? = null,
+    val user: UserResponse? = null,
+    val errorMessage: String? = null,
+    val registrationSuccessful: Boolean = false
+)
+
+class AuthViewModel(
+    private val repository: AuthRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(
+        AuthUiState()
+    )
+
+    val uiState: StateFlow<AuthUiState> =
+        _uiState.asStateFlow()
+
+    fun login(
+        email: String,
+        password: String
+    ) {
+
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.value = AuthUiState(
+                errorMessage = "Email e password são obrigatórios."
+            )
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value = AuthUiState(
+                isLoading = true
+            )
+
+            try {
+
+                val response = repository.login(
+                    email = email.trim(),
+                    password = password
+                )
+
+                _uiState.value = AuthUiState(
+                    token = response.token,
+                    user = response.user
+                )
+
+            } catch (e: Exception) {
+
+                _uiState.value = AuthUiState(
+                    errorMessage = "Não foi possível iniciar sessão."
+                )
+            }
+        }
+    }
+
+    fun register(
+        name: String,
+        email: String,
+        password: String
+    ) {
+
+        if (
+            name.isBlank() ||
+            email.isBlank() ||
+            password.isBlank()
+        ) {
+            _uiState.value = AuthUiState(
+                errorMessage = "Todos os campos são obrigatórios."
+            )
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value = AuthUiState(
+                isLoading = true
+            )
+
+            try {
+
+                repository.register(
+                    name = name.trim(),
+                    email = email.trim(),
+                    password = password
+                )
+
+                _uiState.value = AuthUiState(
+                    registrationSuccessful = true
+                )
+
+            } catch (e: Exception) {
+
+                _uiState.value = AuthUiState(
+                    errorMessage = "Não foi possível criar a conta."
+                )
+            }
+        }
+    }
+
+    fun clearRegistrationSuccess() {
+        _uiState.value = _uiState.value.copy(
+            registrationSuccessful = false
+        )
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(
+            errorMessage = null
+        )
+    }
+}

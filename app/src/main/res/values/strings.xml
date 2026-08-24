@@ -42,5 +42,16 @@
     <string name="camera_permission_required">É necessário permitir o acesso à câmara.</string>
 
     <string name="note_photo">Fotografia da nota</string>
+
+    <string name="login">Iniciar sessão</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="create_account">Criar conta</string>
+
+    <string name="name">Nome</string>
+    <string name="back_to_login">Voltar ao início de sessão</string>
+
+    <string name="logging_in">A iniciar sessão...</string>
+    <string name="creating_account">A criar conta...</string>
     
 </resources>
