@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pt.ipt.easynotes.data.AuthRepository
 import pt.ipt.easynotes.network.UserResponse
+import kotlinx.coroutines.flow.first
 
 data class AuthUiState(
     val isLoading: Boolean = false,
@@ -121,5 +122,48 @@ class AuthViewModel(
         _uiState.value = _uiState.value.copy(
             errorMessage = null
         )
+    }
+
+    fun restoreSession() {
+
+        viewModelScope.launch {
+
+            val session = repository
+                .getSession()
+                .first()
+
+            if (session == null) {
+                _uiState.value = AuthUiState()
+                return@launch
+            }
+
+            try {
+
+                val user = repository.validateSession(
+                    token = session.token
+                )
+
+                _uiState.value = AuthUiState(
+                    token = session.token,
+                    user = user
+                )
+
+            } catch (e: Exception) {
+
+                repository.logout()
+
+                _uiState.value = AuthUiState()
+            }
+        }
+    }
+
+    fun logout() {
+
+        viewModelScope.launch {
+
+            repository.logout()
+
+            _uiState.value = AuthUiState()
+        }
     }
 }

@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import pt.ipt.easynotes.data.AuthRepository
 import pt.ipt.easynotes.data.NotesDatabase
 import pt.ipt.easynotes.data.NotesRepository
+import pt.ipt.easynotes.data.SessionManager
 import pt.ipt.easynotes.ui.AboutScreen
 import pt.ipt.easynotes.ui.AuthViewModel
 import pt.ipt.easynotes.ui.AuthViewModelFactory
@@ -50,7 +51,13 @@ class MainActivity : ComponentActivity() {
             notesViewModelFactory
         )[NotesViewModel::class.java]
 
-        val authRepository = AuthRepository()
+        val sessionManager = SessionManager(
+            applicationContext
+        )
+
+        val authRepository = AuthRepository(
+            sessionManager
+        )
 
         val authViewModelFactory = AuthViewModelFactory(
             authRepository
@@ -90,6 +97,10 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val navController = rememberNavController()
+
+                LaunchedEffect(Unit) {
+                    authViewModel.restoreSession()
+                }
 
                 NavHost(
                     navController = navController,
@@ -137,7 +148,10 @@ class MainActivity : ComponentActivity() {
                             .uiState
                             .collectAsStateWithLifecycle()
 
-                        LaunchedEffect(authState.token) {
+                        LaunchedEffect(
+                            authState.token,
+                            authState.user
+                        ) {
 
                             val token = authState.token
                             val user = authState.user
@@ -148,13 +162,10 @@ class MainActivity : ComponentActivity() {
                                     userId = user.id,
                                     token = token
                                 )
+
                                 notesViewModel.loadRemoteNotes(
                                     token = token,
                                     userId = user.id
-                                )
-                                notesViewModel.setCurrentUser(
-                                        userId = user.id,
-                                token = token
                                 )
                             }
                         }
@@ -171,6 +182,16 @@ class MainActivity : ComponentActivity() {
                             },
                             onAboutClick = {
                                 navController.navigate("about")
+                            },
+                            onLogoutClick = {
+
+                                authViewModel.logout()
+
+                                navController.navigate("login") {
+                                    popUpTo("notes") {
+                                        inclusive = true
+                                    }
+                                }
                             }
                         )
                     }
@@ -216,7 +237,9 @@ class MainActivity : ComponentActivity() {
                             .uiState
                             .collectAsStateWithLifecycle()
 
-                        LaunchedEffect(authState.registrationSuccessful) {
+                        LaunchedEffect(
+                            authState.registrationSuccessful
+                        ) {
 
                             if (authState.registrationSuccessful) {
 

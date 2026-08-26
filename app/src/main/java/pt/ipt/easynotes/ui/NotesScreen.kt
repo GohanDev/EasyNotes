@@ -56,7 +56,8 @@ fun NotesScreen(
     viewModel: NotesViewModel,
     onAddNote: () -> Unit,
     onNoteClick: (Int) -> Unit,
-    onAboutClick: () -> Unit
+    onAboutClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ){
 
     val notes by viewModel.notes.collectAsStateWithLifecycle()
@@ -141,6 +142,14 @@ fun NotesScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.about)
+                        )
+                    }
+
+                    TextButton(
+                        onClick = onLogoutClick
+                    ) {
+                        Text(
+                            text = stringResource(R.string.logout)
                         )
                     }
                 }

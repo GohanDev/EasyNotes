@@ -6,6 +6,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
 
 @Serializable
 data class LoginRequest(
@@ -72,6 +75,21 @@ object AuthService {
                         email = email,
                         password = password
                     )
+                )
+            }
+            .body()
+    }
+
+    suspend fun getCurrentUser(
+        token: String
+    ): UserResponse {
+
+        return ApiClient.client
+            .get("${ApiClient.BASE_URL}/me") {
+
+                header(
+                    HttpHeaders.Authorization,
+                    "Bearer $token"
                 )
             }
             .body()

@@ -53,5 +53,6 @@
 
     <string name="logging_in">A iniciar sessão...</string>
     <string name="creating_account">A criar conta...</string>
+    <string name="logout">Terminar sessão</string>
     
 </resources>
