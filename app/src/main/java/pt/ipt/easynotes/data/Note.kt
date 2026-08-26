@@ -7,6 +7,8 @@ import androidx.room.PrimaryKey
 data class Note(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val remoteId: Int? = null,
+    val userId: Int,
     val title: String,
     val content: String,
     val photoPath: String? = null

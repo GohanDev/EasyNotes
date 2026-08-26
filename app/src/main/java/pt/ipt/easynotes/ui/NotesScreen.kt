@@ -60,6 +60,8 @@ fun NotesScreen(
 ){
 
     val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val remoteNotes by viewModel.remoteNotes.collectAsStateWithLifecycle()
+    val remoteError by viewModel.remoteError.collectAsStateWithLifecycle()
 
     var apiStatus by remember {
         mutableStateOf("A verificar API...")
@@ -124,7 +126,11 @@ fun NotesScreen(
                         )
 
                         Text(
-                            text = apiStatus,
+                            text = if (remoteError != null) {
+                                remoteError!!
+                            } else {
+                                "Notas na API: ${remoteNotes.size}"
+                            },
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

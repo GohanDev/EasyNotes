@@ -27,8 +27,9 @@ import pt.ipt.easynotes.ui.NoteEditorScreen
 import pt.ipt.easynotes.ui.NotesScreen
 import pt.ipt.easynotes.ui.NotesViewModel
 import pt.ipt.easynotes.ui.NotesViewModelFactory
-import pt.ipt.easynotes.ui.theme.EasyNotesTheme
 import pt.ipt.easynotes.ui.RegisterScreen
+import pt.ipt.easynotes.ui.theme.EasyNotesTheme
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,6 +133,32 @@ class MainActivity : ComponentActivity() {
 
                     composable("notes") {
 
+                        val authState by authViewModel
+                            .uiState
+                            .collectAsStateWithLifecycle()
+
+                        LaunchedEffect(authState.token) {
+
+                            val token = authState.token
+                            val user = authState.user
+
+                            if (token != null && user != null) {
+
+                                notesViewModel.setCurrentUser(
+                                    userId = user.id,
+                                    token = token
+                                )
+                                notesViewModel.loadRemoteNotes(
+                                    token = token,
+                                    userId = user.id
+                                )
+                                notesViewModel.setCurrentUser(
+                                        userId = user.id,
+                                token = token
+                                )
+                            }
+                        }
+
                         NotesScreen(
                             viewModel = notesViewModel,
                             onAddNote = {
@@ -190,6 +217,7 @@ class MainActivity : ComponentActivity() {
                             .collectAsStateWithLifecycle()
 
                         LaunchedEffect(authState.registrationSuccessful) {
+
                             if (authState.registrationSuccessful) {
 
                                 authViewModel.clearRegistrationSuccess()
