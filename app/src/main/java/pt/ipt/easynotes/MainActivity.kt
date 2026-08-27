@@ -3,7 +3,6 @@ package pt.ipt.easynotes
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
@@ -30,8 +30,9 @@ import pt.ipt.easynotes.ui.NotesViewModel
 import pt.ipt.easynotes.ui.NotesViewModelFactory
 import pt.ipt.easynotes.ui.RegisterScreen
 import pt.ipt.easynotes.ui.theme.EasyNotesTheme
+import pt.ipt.easynotes.auth.BiometricAuthenticator
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +69,10 @@ class MainActivity : ComponentActivity() {
             authViewModelFactory
         )[AuthViewModel::class.java]
 
+
+        val biometricAuthenticator =
+            BiometricAuthenticator(this)
+
         setContent {
 
             EasyNotesTheme {
@@ -78,7 +83,7 @@ class MainActivity : ComponentActivity() {
                     rememberLauncherForActivityResult(
                         contract = ActivityResultContracts.RequestPermission()
                     ) {
-                        // Por agora não fazemos nada aqui.
+                        // Não é necessário executar nenhuma ação aqui.
                     }
 
                 LaunchedEffect(Unit) {
@@ -113,14 +118,44 @@ class MainActivity : ComponentActivity() {
                             .uiState
                             .collectAsStateWithLifecycle()
 
-                        LaunchedEffect(authState.token) {
+                        LaunchedEffect(
+                            authState.token,
+                            authState.restoredSession
+                        ) {
 
                             if (authState.token != null) {
 
-                                navController.navigate("notes") {
+                                if (authState.restoredSession) {
 
-                                    popUpTo("login") {
-                                        inclusive = true
+                                    if (biometricAuthenticator.canAuthenticate()) {
+
+                                        biometricAuthenticator.authenticate(
+                                            onSuccess = {
+
+                                                navController.navigate("notes") {
+                                                    popUpTo("login") {
+                                                        inclusive = true
+                                                    }
+                                                }
+                                            },
+                                            onError = {
+                                                // Fica no login se cancelar ou falhar.
+                                            }
+                                        )
+
+                                    } else {
+
+                                        // Não entra automaticamente.
+                                        // O dispositivo não tem biometria/credencial configurada.
+                                    }
+
+                                } else {
+
+                                    // Login acabado de fazer com email/password.
+                                    navController.navigate("notes") {
+                                        popUpTo("login") {
+                                            inclusive = true
+                                        }
                                     }
                                 }
                             }

@@ -15,7 +15,8 @@ data class AuthUiState(
     val token: String? = null,
     val user: UserResponse? = null,
     val errorMessage: String? = null,
-    val registrationSuccessful: Boolean = false
+    val registrationSuccessful: Boolean = false,
+    val restoredSession: Boolean = false
 )
 
 class AuthViewModel(
@@ -145,7 +146,8 @@ class AuthViewModel(
 
                 _uiState.value = AuthUiState(
                     token = session.token,
-                    user = user
+                    user = user,
+                    restoredSession = true
                 )
 
             } catch (e: Exception) {
