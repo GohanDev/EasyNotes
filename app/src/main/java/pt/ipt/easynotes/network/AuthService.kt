@@ -9,6 +9,8 @@ import kotlinx.serialization.Serializable
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 
 @Serializable
 data class LoginRequest(
@@ -84,7 +86,7 @@ object AuthService {
         token: String
     ): UserResponse {
 
-        return ApiClient.client
+        val response = ApiClient.client
             .get("${ApiClient.BASE_URL}/me") {
 
                 header(
@@ -92,6 +94,28 @@ object AuthService {
                     "Bearer $token"
                 )
             }
-            .body()
+
+        return when (response.status) {
+
+            HttpStatusCode.OK -> {
+                response.body()
+            }
+
+            HttpStatusCode.Unauthorized -> {
+                throw InvalidSessionException()
+            }
+
+            else -> {
+                throw ApiException(
+                    "Erro da API: ${response.status}"
+                )
+            }
+        }
     }
 }
+
+class InvalidSessionException : Exception()
+
+class ApiException(
+    message: String
+) : Exception(message)

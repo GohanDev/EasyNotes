@@ -117,4 +117,91 @@ class NotesRepository(
             }
         }
     }
+
+    suspend fun syncPendingCreates(
+        token: String,
+        userId: Int
+    ) {
+
+        val pendingNotes = noteDao.getNotesBySyncStatus(
+            userId = userId,
+            status = SyncStatus.PENDING_CREATE
+        )
+
+        pendingNotes.forEach { note ->
+
+            val remoteNote = createRemoteNote(
+                token = token,
+                title = note.title,
+                content = note.content
+            )
+
+            noteDao.updateNote(
+                note.copy(
+                    remoteId = remoteNote.id,
+                    syncStatus = SyncStatus.SYNCED
+                )
+            )
+        }
+    }
+
+    suspend fun syncPendingUpdates(
+        token: String,
+        userId: Int
+    ) {
+        val pendingNotes = noteDao.getNotesBySyncStatus(
+            userId = userId,
+            status = SyncStatus.PENDING_UPDATE
+        )
+
+        pendingNotes.forEach { note ->
+
+            val remoteId = note.remoteId
+                ?: return@forEach
+
+            updateRemoteNote(
+                token = token,
+                id = remoteId,
+                title = note.title,
+                content = note.content
+            )
+
+            noteDao.updateNote(
+                note.copy(
+                    syncStatus = SyncStatus.SYNCED
+                )
+            )
+        }
+    }
+
+    suspend fun syncPendingDeletes(
+        token: String,
+        userId: Int
+    ) {
+        val pendingNotes = noteDao.getNotesBySyncStatus(
+            userId = userId,
+            status = SyncStatus.PENDING_DELETE
+        )
+
+        pendingNotes.forEach { note ->
+
+            val remoteId = note.remoteId
+
+            // Se por algum motivo não tiver remoteId,
+            // basta remover localmente.
+            if (remoteId == null) {
+                noteDao.deleteNote(note)
+                return@forEach
+            }
+
+            // Apaga primeiro na API.
+            deleteRemoteNote(
+                token = token,
+                id = remoteId
+            )
+
+            // Só depois remove definitivamente do Room.
+            noteDao.deleteNote(note)
+        }
+    }
 }

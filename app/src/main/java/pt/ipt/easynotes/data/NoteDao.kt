@@ -10,7 +10,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NoteDao {
 
-    @Query("SELECT * FROM notes WHERE userId = :userId ORDER BY id DESC")
+    @Query(
+        "SELECT * FROM notes " +
+                "WHERE userId = :userId " +
+                "AND syncStatus != 'PENDING_DELETE' " +
+                "ORDER BY id DESC"
+    )
     fun getNotesByUser(userId: Int): Flow<List<Note>>
 
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
@@ -45,6 +50,15 @@ interface NoteDao {
     suspend fun deleteAllRemoteNotesForUser(
         userId: Int
     )
+
+    @Query(
+        "SELECT * FROM notes " +
+                "WHERE userId = :userId AND syncStatus = :status"
+    )
+    suspend fun getNotesBySyncStatus(
+        userId: Int,
+        status: SyncStatus
+    ): List<Note>
 
     @Insert
     suspend fun insertNote(note: Note)

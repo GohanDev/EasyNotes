@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pt.ipt.easynotes.data.Note
 import pt.ipt.easynotes.data.NotesRepository
+import pt.ipt.easynotes.data.SyncStatus
 import pt.ipt.easynotes.network.NoteApiResponse
 
 class NotesViewModel(
@@ -59,23 +60,51 @@ class NotesViewModel(
         viewModelScope.launch {
 
             val userId = currentUserId ?: return@launch
-            val token = currentToken ?: return@launch
+            val token = currentToken
 
-            val remoteNote = repository.createRemoteNote(
-                token = token,
-                title = title,
-                content = content
-            )
+            if (token != null) {
 
-            val note = Note(
-                remoteId = remoteNote.id,
+                try {
+
+                    // Há ligação à API:
+                    // cria primeiro remotamente.
+                    val remoteNote = repository.createRemoteNote(
+                        token = token,
+                        title = title,
+                        content = content
+                    )
+
+                    // Depois guarda localmente já sincronizada.
+                    val note = Note(
+                        remoteId = remoteNote.id,
+                        userId = userId,
+                        title = title,
+                        content = content,
+                        photoPath = photoPath,
+                        syncStatus = SyncStatus.SYNCED
+                    )
+
+                    repository.insertNote(note)
+
+                    return@launch
+
+                } catch (e: Exception) {
+                    // Se não for possível contactar a API,
+                    // continuamos abaixo e guardamos localmente.
+                }
+            }
+
+            // Sem API: guarda no Room e marca como pendente.
+            val offlineNote = Note(
+                remoteId = null,
                 userId = userId,
                 title = title,
                 content = content,
-                photoPath = photoPath
+                photoPath = photoPath,
+                syncStatus = SyncStatus.PENDING_CREATE
             )
 
-            repository.insertNote(note)
+            repository.insertNote(offlineNote)
         }
     }
 
@@ -87,43 +116,94 @@ class NotesViewModel(
     ) {
         viewModelScope.launch {
 
-            val token = currentToken ?: return@launch
-            val note = repository.getNoteById(id) ?: return@launch
+            val token = currentToken
+            val note = repository.getNoteById(id)
+                ?: return@launch
 
-            val remoteId = note.remoteId
+            // Se a nota ainda nem existe na API,
+            // continua como PENDING_CREATE.
+            val newStatus =
+                if (note.remoteId == null) {
+                    SyncStatus.PENDING_CREATE
+                } else {
+                    SyncStatus.PENDING_UPDATE
+                }
 
-            if (remoteId != null) {
-                repository.updateRemoteNote(
-                    token = token,
-                    id = remoteId,
-                    title = title,
-                    content = content
-                )
+            // Guarda PRIMEIRO no Room.
+            // Assim funciona mesmo sem Internet.
+            val updatedNote = note.copy(
+                title = title,
+                content = content,
+                photoPath = photoPath,
+                syncStatus = newStatus
+            )
+
+            repository.updateNote(updatedNote)
+
+            // Se não existir token, fica pendente.
+            if (token == null) {
+                return@launch
             }
 
-            repository.updateNote(
-                note.copy(
-                    title = title,
-                    content = content,
-                    photoPath = photoPath
-                )
-            )
+            // Se já existe na API, tenta sincronizar.
+            if (updatedNote.remoteId != null) {
+
+                try {
+
+                    repository.updateRemoteNote(
+                        token = token,
+                        id = updatedNote.remoteId,
+                        title = title,
+                        content = content
+                    )
+
+                    repository.updateNote(
+                        updatedNote.copy(
+                            syncStatus = SyncStatus.SYNCED
+                        )
+                    )
+
+                } catch (e: Exception) {
+                    // Sem Internet:
+                    // fica PENDING_UPDATE no Room.
+                }
+            }
         }
     }
 
     fun deleteNote(note: Note) {
         viewModelScope.launch {
 
+            // Se a nota nunca foi enviada para a API,
+            // apaga apenas do Room.
+            if (note.remoteId == null) {
+                repository.deleteNote(note)
+                return@launch
+            }
+
+            // Se existe na API, marcamos primeiro como pendente.
+            val pendingDeleteNote = note.copy(
+                syncStatus = SyncStatus.PENDING_DELETE
+            )
+
+            repository.updateNote(pendingDeleteNote)
+
             val token = currentToken ?: return@launch
 
-            if (note.remoteId != null) {
+            try {
                 repository.deleteRemoteNote(
                     token = token,
                     id = note.remoteId
                 )
-            }
 
-            repository.deleteNote(note)
+                // Só removemos definitivamente do Room
+                // se a API tiver apagado com sucesso.
+                repository.deleteNote(pendingDeleteNote)
+
+            } catch (e: Exception) {
+                // Sem Internet / API desligada:
+                // fica PENDING_DELETE e não crasha.
+            }
         }
     }
 
@@ -134,17 +214,44 @@ class NotesViewModel(
     fun deleteNoteById(id: Int) {
         viewModelScope.launch {
 
-            val token = currentToken ?: return@launch
-            val note = repository.getNoteById(id) ?: return@launch
+            val note = repository.getNoteById(id)
+                ?: return@launch
 
-            if (note.remoteId != null) {
+            // Nota criada offline e que nunca chegou à API:
+            // pode ser apagada definitivamente do Room.
+            if (note.remoteId == null) {
+                repository.deleteNote(note)
+                return@launch
+            }
+
+            // A nota existe na API.
+            // Marcamos primeiro como pendente de eliminação.
+            val pendingDeleteNote = note.copy(
+                syncStatus = SyncStatus.PENDING_DELETE
+            )
+
+            repository.updateNote(pendingDeleteNote)
+
+            val token = currentToken ?: return@launch
+
+            try {
+
                 repository.deleteRemoteNote(
                     token = token,
                     id = note.remoteId
                 )
-            }
 
-            repository.deleteNote(note)
+                // Se conseguiu apagar na API,
+                // apagamos definitivamente do Room.
+                repository.deleteNote(pendingDeleteNote)
+
+            } catch (e: Exception) {
+
+                // API desligada / sem Internet.
+                // A nota continua no Room como PENDING_DELETE.
+                // Como o DAO a esconde da lista,
+                // para o utilizador ela já aparece como apagada.
+            }
         }
     }
 
@@ -155,6 +262,20 @@ class NotesViewModel(
         viewModelScope.launch {
 
             try {
+                repository.syncPendingCreates(
+                    token = token,
+                    userId = userId
+                )
+
+                repository.syncPendingUpdates(
+                    token = token,
+                    userId = userId
+                )
+
+                repository.syncPendingDeletes(
+                    token = token,
+                    userId = userId
+                )
 
                 repository.syncRemoteNotesToLocal(
                     token = token,

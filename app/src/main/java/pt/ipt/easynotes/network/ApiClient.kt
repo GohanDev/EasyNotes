@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 object ApiClient {
 
     val client = HttpClient(OkHttp) {
+        expectSuccess = false
         install(ContentNegotiation) {
             json(
                 Json {

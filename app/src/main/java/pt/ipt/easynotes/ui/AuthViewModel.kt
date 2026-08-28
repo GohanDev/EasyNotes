@@ -9,6 +9,8 @@ import kotlinx.coroutines.launch
 import pt.ipt.easynotes.data.AuthRepository
 import pt.ipt.easynotes.network.UserResponse
 import kotlinx.coroutines.flow.first
+import pt.ipt.easynotes.network.InvalidSessionException
+import pt.ipt.easynotes.network.ApiException
 
 data class AuthUiState(
     val isLoading: Boolean = false,
@@ -144,17 +146,42 @@ class AuthViewModel(
                     token = session.token
                 )
 
+                // A API respondeu e confirmou que o JWT é válido.
                 _uiState.value = AuthUiState(
                     token = session.token,
                     user = user,
                     restoredSession = true
                 )
 
-            } catch (e: Exception) {
+            } catch (e: InvalidSessionException) {
 
+                // A API respondeu 401.
+                // O JWT já não é válido, portanto apagamos a sessão.
                 repository.logout()
 
-                _uiState.value = AuthUiState()
+                _uiState.value = AuthUiState(
+                    errorMessage = "A sessão expirou. Inicie sessão novamente."
+                )
+
+            } catch (e: ApiException) {
+
+                // A API respondeu, mas ocorreu outro erro HTTP.
+                // Não apagamos a sessão guardada.
+                _uiState.value = AuthUiState(
+                    errorMessage = "Não foi possível validar a sessão."
+                )
+
+            } catch (e: Exception) {
+                _uiState.value = AuthUiState(
+                    token = session.token,
+                    user = UserResponse(
+                        id = session.userId,
+                        name = session.name,
+                        email = session.email
+                    ),
+                    errorMessage = "Modo offline",
+                    restoredSession = true
+                )
             }
         }
     }

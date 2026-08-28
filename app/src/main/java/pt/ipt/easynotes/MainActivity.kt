@@ -3,9 +3,7 @@ package pt.ipt.easynotes
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -16,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import pt.ipt.easynotes.auth.BiometricAuthenticator
 import pt.ipt.easynotes.data.AuthRepository
 import pt.ipt.easynotes.data.NotesDatabase
 import pt.ipt.easynotes.data.NotesRepository
@@ -30,7 +29,6 @@ import pt.ipt.easynotes.ui.NotesViewModel
 import pt.ipt.easynotes.ui.NotesViewModelFactory
 import pt.ipt.easynotes.ui.RegisterScreen
 import pt.ipt.easynotes.ui.theme.EasyNotesTheme
-import pt.ipt.easynotes.auth.BiometricAuthenticator
 
 class MainActivity : FragmentActivity() {
 
@@ -69,7 +67,6 @@ class MainActivity : FragmentActivity() {
             authViewModelFactory
         )[AuthViewModel::class.java]
 
-
         val biometricAuthenticator =
             BiometricAuthenticator(this)
 
@@ -79,13 +76,7 @@ class MainActivity : FragmentActivity() {
 
                 val context = LocalContext.current
 
-                val localNetworkPermissionLauncher =
-                    rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.RequestPermission()
-                    ) {
-                        // Não é necessário executar nenhuma ação aqui.
-                    }
-
+                // Permissão de acesso à rede local
                 LaunchedEffect(Unit) {
 
                     val hasPermission =
@@ -95,14 +86,18 @@ class MainActivity : FragmentActivity() {
                         ) == PackageManager.PERMISSION_GRANTED
 
                     if (!hasPermission) {
-                        localNetworkPermissionLauncher.launch(
-                            Manifest.permission.ACCESS_LOCAL_NETWORK
+                        requestPermissions(
+                            arrayOf(
+                                Manifest.permission.ACCESS_LOCAL_NETWORK
+                            ),
+                            100
                         )
                     }
                 }
 
                 val navController = rememberNavController()
 
+                // Tenta recuperar a sessão guardada
                 LaunchedEffect(Unit) {
                     authViewModel.restoreSession()
                 }
@@ -112,6 +107,7 @@ class MainActivity : FragmentActivity() {
                     startDestination = "login"
                 ) {
 
+                    // LOGIN
                     composable("login") {
 
                         val authState by authViewModel
@@ -127,31 +123,31 @@ class MainActivity : FragmentActivity() {
 
                                 if (authState.restoredSession) {
 
-                                    if (biometricAuthenticator.canAuthenticate()) {
+                                    if (
+                                        biometricAuthenticator
+                                            .canAuthenticate()
+                                    ) {
 
                                         biometricAuthenticator.authenticate(
                                             onSuccess = {
 
-                                                navController.navigate("notes") {
+                                                navController.navigate(
+                                                    "notes"
+                                                ) {
                                                     popUpTo("login") {
                                                         inclusive = true
                                                     }
                                                 }
                                             },
                                             onError = {
-                                                // Fica no login se cancelar ou falhar.
+                                                // Fica no login
                                             }
                                         )
-
-                                    } else {
-
-                                        // Não entra automaticamente.
-                                        // O dispositivo não tem biometria/credencial configurada.
                                     }
 
                                 } else {
 
-                                    // Login acabado de fazer com email/password.
+                                    // Login normal com email/password
                                     navController.navigate("notes") {
                                         popUpTo("login") {
                                             inclusive = true
@@ -177,6 +173,7 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
+                    // LISTA DE NOTAS
                     composable("notes") {
 
                         val authState by authViewModel
@@ -191,7 +188,10 @@ class MainActivity : FragmentActivity() {
                             val token = authState.token
                             val user = authState.user
 
-                            if (token != null && user != null) {
+                            if (
+                                token != null &&
+                                user != null
+                            ) {
 
                                 notesViewModel.setCurrentUser(
                                     userId = user.id,
@@ -207,17 +207,21 @@ class MainActivity : FragmentActivity() {
 
                         NotesScreen(
                             viewModel = notesViewModel,
+
                             onAddNote = {
                                 navController.navigate("editor")
                             },
+
                             onNoteClick = { noteId ->
                                 navController.navigate(
                                     "editor/$noteId"
                                 )
                             },
+
                             onAboutClick = {
                                 navController.navigate("about")
                             },
+
                             onLogoutClick = {
 
                                 authViewModel.logout()
@@ -231,6 +235,7 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
+                    // CRIAR NOTA
                     composable("editor") {
 
                         NoteEditorScreen(
@@ -241,7 +246,10 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
-                    composable("editor/{noteId}") { backStackEntry ->
+                    // EDITAR NOTA
+                    composable(
+                        "editor/{noteId}"
+                    ) { backStackEntry ->
 
                         val noteId =
                             backStackEntry.arguments
@@ -257,6 +265,7 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
+                    // SOBRE
                     composable("about") {
 
                         AboutScreen(
@@ -266,6 +275,7 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
+                    // REGISTO
                     composable("register") {
 
                         val authState by authViewModel
@@ -276,9 +286,12 @@ class MainActivity : FragmentActivity() {
                             authState.registrationSuccessful
                         ) {
 
-                            if (authState.registrationSuccessful) {
+                            if (
+                                authState.registrationSuccessful
+                            ) {
 
-                                authViewModel.clearRegistrationSuccess()
+                                authViewModel
+                                    .clearRegistrationSuccess()
 
                                 navController.popBackStack()
                             }
@@ -287,7 +300,11 @@ class MainActivity : FragmentActivity() {
                         RegisterScreen(
                             isLoading = authState.isLoading,
                             errorMessage = authState.errorMessage,
-                            onRegister = { name, email, password ->
+
+                            onRegister = {
+                                    name,
+                                    email,
+                                    password ->
 
                                 authViewModel.register(
                                     name = name,
@@ -295,6 +312,7 @@ class MainActivity : FragmentActivity() {
                                     password = password
                                 )
                             },
+
                             onBackToLogin = {
                                 navController.popBackStack()
                             }
