@@ -11,6 +11,8 @@ import pt.ipt.easynotes.network.UserResponse
 import kotlinx.coroutines.flow.first
 import pt.ipt.easynotes.network.InvalidSessionException
 import pt.ipt.easynotes.network.ApiException
+import pt.ipt.easynotes.network.InvalidCredentialsException
+import pt.ipt.easynotes.network.EmailAlreadyExistsException
 
 data class AuthUiState(
     val isLoading: Boolean = false,
@@ -44,6 +46,13 @@ class AuthViewModel(
             return
         }
 
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _uiState.value = AuthUiState(
+                errorMessage = "Introduza um email válido."
+            )
+            return
+        }
+
         viewModelScope.launch {
 
             _uiState.value = AuthUiState(
@@ -62,10 +71,22 @@ class AuthViewModel(
                     user = response.user
                 )
 
+            } catch (e: InvalidCredentialsException) {
+
+                _uiState.value = AuthUiState(
+                    errorMessage = "Email ou password incorretos."
+                )
+
+            } catch (e: ApiException) {
+                _uiState.value = AuthUiState(
+                    errorMessage = e.message ?: "Ocorreu um erro no servidor."
+                )
+
+
             } catch (e: Exception) {
 
                 _uiState.value = AuthUiState(
-                    errorMessage = "Não foi possível iniciar sessão."
+                    errorMessage = "Não foi possível contactar o servidor."
                 )
             }
         }
@@ -106,10 +127,21 @@ class AuthViewModel(
                     registrationSuccessful = true
                 )
 
+            } catch (e: EmailAlreadyExistsException) {
+
+                _uiState.value = AuthUiState(
+                    errorMessage = "Já existe uma conta com este email."
+                )
+
+            } catch (e: ApiException) {
+                _uiState.value = AuthUiState(
+                    errorMessage = e.message ?: "Ocorreu um erro no servidor."
+                )
+
             } catch (e: Exception) {
 
                 _uiState.value = AuthUiState(
-                    errorMessage = "Não foi possível criar a conta."
+                    errorMessage = "Não foi possível contactar o servidor."
                 )
             }
         }
@@ -188,11 +220,11 @@ class AuthViewModel(
 
     fun logout() {
 
+        // Limpa imediatamente o estado visível na interface.
+        _uiState.value = AuthUiState()
+
         viewModelScope.launch {
-
             repository.logout()
-
-            _uiState.value = AuthUiState()
         }
     }
 }

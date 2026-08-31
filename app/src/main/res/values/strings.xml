@@ -1,6 +1,9 @@
 <resources>
+
+    <!-- Aplicação -->
     <string name="app_name">EasyNotes</string>
 
+    <!-- Notas -->
     <string name="notes">Notas</string>
     <string name="new_note">Nova nota</string>
     <string name="edit_note">Editar nota</string>
@@ -16,43 +19,216 @@
     <string name="no_notes">Ainda não tem notas</string>
     <string name="no_notes_description">Crie a sua primeira nota.</string>
 
+    <!-- Eliminação -->
     <string name="delete_note">Apagar nota</string>
-    <string name="delete_note_confirmation">Tem a certeza de que quer apagar esta nota?</string>
+
+    <string name="delete_note_confirmation">
+        Tem a certeza de que quer apagar esta nota?
+    </string>
+
     <string name="cancel">Cancelar</string>
 
-    <string name="title_required">O título é obrigatório.</string>
-    <string name="content_required">O conteúdo da nota é obrigatório.</string>
+    <!-- Validação -->
+    <string name="title_required">
+        O título é obrigatório.
+    </string>
 
+    <string name="content_required">
+        O conteúdo da nota é obrigatório.
+    </string>
+
+    <!-- Sobre -->
     <string name="about">Sobre</string>
-    <string name="course">Licenciatura em Engenharia Informática</string>
-    <string name="subject">Desenvolvimento de Aplicações Móveis</string>
-    <string name="school_year">Ano letivo 2025/26</string>
 
+    <string name="about_subtitle">
+        Informações sobre a aplicação e o projeto académico.
+    </string>
+
+    <string name="academic_information">
+        Informação académica
+    </string>
+
+    <string name="course">
+        Licenciatura em Engenharia Informática
+    </string>
+
+    <string name="subject">
+        Desenvolvimento de Aplicações Móveis
+    </string>
+
+    <string name="school_year">
+        Ano letivo 2025/26
+    </string>
+
+    <!-- Autor -->
     <string name="author">Autor</string>
-    <string name="author_number">Número: 24706</string>
-    <string name="author_name">Nome: Bruno Alves</string>
 
-    <string name="technologies">Tecnologias e Bibliotecas</string>
-    <string name="technology_kotlin">Kotlin — kotlinlang.org</string>
-    <string name="technology_compose">Jetpack Compose — developer.android.com/compose</string>
-    <string name="technology_room">Room — developer.android.com/training/data-storage/room</string>
-    <string name="technology_navigation">Navigation Compose — developer.android.com/develop/ui/compose/navigation</string>
+    <string name="author_number">
+        Número: 24706
+    </string>
 
-    <string name="take_photo">Tirar fotografia</string>
-    <string name="camera_permission_required">É necessário permitir o acesso à câmara.</string>
+    <string name="author_name">
+        Nome: Bruno Alves
+    </string>
 
-    <string name="note_photo">Fotografia da nota</string>
+    <!-- Tecnologias e bibliotecas -->
+    <string name="technologies">
+        Tecnologias e Bibliotecas
+    </string>
 
-    <string name="login">Iniciar sessão</string>
-    <string name="email">Email</string>
-    <string name="password">Password</string>
-    <string name="create_account">Criar conta</string>
+    <string name="technologies_android">
+        Aplicação Android
+    </string>
 
-    <string name="name">Nome</string>
-    <string name="back_to_login">Voltar ao início de sessão</string>
+    <string name="technologies_api">
+        API REST
+    </string>
 
-    <string name="logging_in">A iniciar sessão...</string>
-    <string name="creating_account">A criar conta...</string>
-    <string name="logout">Terminar sessão</string>
-    
+    <string name="technologies_database">
+        Base de dados
+    </string>
+
+    <!-- Tecnologias Android -->
+    <string name="technology_kotlin">
+        Kotlin — kotlinlang.org
+    </string>
+
+    <string name="technology_xml_binding">
+        XML + View Binding — developer.android.com/topic/libraries/view-binding
+    </string>
+
+    <string name="technology_fragments">
+        AndroidX Fragment — developer.android.com/guide/fragments
+    </string>
+
+    <string name="technology_recyclerview">
+        RecyclerView — developer.android.com/develop/ui/views/layout/recyclerview
+    </string>
+
+    <string name="technology_room">
+        Room — developer.android.com/training/data-storage/room
+    </string>
+
+    <string name="technology_ktor_client">
+        Ktor Client (OkHttp, Content Negotiation e Kotlinx JSON) — ktor.io
+    </string>
+
+    <string name="technology_datastore">
+        DataStore — developer.android.com/topic/libraries/architecture/datastore
+    </string>
+
+    <string name="technology_biometric">
+        AndroidX Biometric — developer.android.com/identity/sign-in/biometric-auth
+    </string>
+
+    <string name="technology_workmanager">
+        WorkManager — developer.android.com/topic/libraries/architecture/workmanager
+    </string>
+
+    <string name="technology_material">Material Components for Android — github.com/material-components/material-components-android</string>
+
+    <!-- Tecnologias API REST -->
+    <string name="technology_ktor_server">
+        Ktor Server (Netty, Content Negotiation e Kotlinx JSON) — ktor.io
+    </string>
+
+    <string name="technology_jwt">
+        Autenticação JWT com Ktor — ktor.io
+    </string>
+
+    <string name="technology_exposed">
+        Exposed — github.com/JetBrains/Exposed
+    </string>
+
+    <string name="technology_bcrypt">
+        BCrypt — github.com/patrickfav/bcrypt
+    </string>
+
+    <string name="technology_swagger">
+        Swagger / OpenAPI com Ktor — ktor.io
+    </string>
+
+    <string name="technology_logback">
+        Logback — logback.qos.ch
+    </string>
+
+    <!-- Bases de dados -->
+    <string name="technology_postgresql">
+        PostgreSQL — postgresql.org
+    </string>
+
+    <string name="technology_h2">
+        H2 Database — h2database.com
+    </string>
+
+    <!-- Câmara -->
+    <string name="take_photo">
+        Tirar fotografia
+    </string>
+
+    <string name="camera_permission_required">
+        É necessário permitir o acesso à câmara.
+    </string>
+
+    <string name="note_photo">
+        Fotografia da nota
+    </string>
+
+    <!-- Autenticação -->
+    <string name="login">
+        Iniciar sessão
+    </string>
+
+    <string name="email">
+        Email
+    </string>
+
+    <string name="password">
+        Password
+    </string>
+
+    <string name="create_account">
+        Criar conta
+    </string>
+
+    <string name="name">
+        Nome
+    </string>
+
+    <string name="back_to_login">
+        Voltar ao início de sessão
+    </string>
+
+    <string name="logging_in">
+        A iniciar sessão...
+    </string>
+
+    <string name="logout">
+        Terminar sessão
+    </string>
+
+    <!-- Login -->
+    <string name="login_subtitle">
+        As suas notas, sempre disponíveis.
+    </string>
+
+    <string name="login_instruction">
+        Inicie sessão para aceder às suas notas.
+    </string>
+
+    <!-- Registo -->
+    <string name="register_subtitle">
+        Comece a organizar as suas notas.
+    </string>
+
+    <string name="register_instruction">
+        Preencha os dados para criar a sua conta.
+    </string>
+
+    <string name="registering">
+        A criar conta...
+    </string>
+    <string name="fotografia">Fotografia</string>
+    <string name="pode_associar_uma_fotografia_a_esta_nota">Pode associar uma fotografia a esta nota.</string>
+
 </resources>

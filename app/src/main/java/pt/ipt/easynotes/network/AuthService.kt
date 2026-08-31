@@ -1,16 +1,15 @@
 package pt.ipt.easynotes.network
 
 import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.http.HttpHeaders
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
 
 @Serializable
 data class LoginRequest(
@@ -45,7 +44,7 @@ object AuthService {
         password: String
     ): LoginResponse {
 
-        return ApiClient.client
+        val response = ApiClient.client
             .post("${ApiClient.BASE_URL}/auth/login") {
 
                 contentType(ContentType.Application.Json)
@@ -57,7 +56,23 @@ object AuthService {
                     )
                 )
             }
-            .body()
+
+        return when (response.status) {
+
+            HttpStatusCode.OK -> {
+                response.body()
+            }
+
+            HttpStatusCode.Unauthorized -> {
+                throw InvalidCredentialsException()
+            }
+
+            else -> {
+                throw ApiException(
+                    "Erro da API: ${response.status}"
+                )
+            }
+        }
     }
 
     suspend fun register(
@@ -66,7 +81,7 @@ object AuthService {
         password: String
     ): UserResponse {
 
-        return ApiClient.client
+        val response = ApiClient.client
             .post("${ApiClient.BASE_URL}/auth/register") {
 
                 contentType(ContentType.Application.Json)
@@ -79,7 +94,24 @@ object AuthService {
                     )
                 )
             }
-            .body()
+
+        return when (response.status) {
+
+            HttpStatusCode.OK,
+            HttpStatusCode.Created -> {
+                response.body()
+            }
+
+            HttpStatusCode.Conflict -> {
+                throw EmailAlreadyExistsException()
+            }
+
+            else -> {
+                throw ApiException(
+                    "Erro da API: ${response.status}"
+                )
+            }
+        }
     }
 
     suspend fun getCurrentUser(
@@ -114,8 +146,16 @@ object AuthService {
     }
 }
 
+// Credenciais de login incorretas.
+class InvalidCredentialsException : Exception()
+
+// O email já está registado.
+class EmailAlreadyExistsException : Exception()
+
+// Sessão/JWT inválido ou expirado.
 class InvalidSessionException : Exception()
 
+// Outros erros devolvidos pela API.
 class ApiException(
     message: String
 ) : Exception(message)

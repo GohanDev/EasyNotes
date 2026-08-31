@@ -1,5 +1,6 @@
 package pt.ipt.easynotes.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,11 +9,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pt.ipt.easynotes.data.Note
 import pt.ipt.easynotes.data.NotesRepository
+import pt.ipt.easynotes.data.SyncScheduler
 import pt.ipt.easynotes.data.SyncStatus
 import pt.ipt.easynotes.network.NoteApiResponse
 
 class NotesViewModel(
-    private val repository: NotesRepository
+    private val repository: NotesRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _notes =
@@ -65,16 +68,12 @@ class NotesViewModel(
             if (token != null) {
 
                 try {
-
-                    // Há ligação à API:
-                    // cria primeiro remotamente.
                     val remoteNote = repository.createRemoteNote(
                         token = token,
                         title = title,
                         content = content
                     )
 
-                    // Depois guarda localmente já sincronizada.
                     val note = Note(
                         remoteId = remoteNote.id,
                         userId = userId,
@@ -86,15 +85,18 @@ class NotesViewModel(
 
                     repository.insertNote(note)
 
+                    // A comunicação com a API teve sucesso.
+                    // Remove uma eventual mensagem de erro antiga.
+                    _remoteError.value = null
+
                     return@launch
 
                 } catch (e: Exception) {
-                    // Se não for possível contactar a API,
-                    // continuamos abaixo e guardamos localmente.
+                    // API indisponível:
+                    // continua e guarda localmente.
                 }
             }
 
-            // Sem API: guarda no Room e marca como pendente.
             val offlineNote = Note(
                 remoteId = null,
                 userId = userId,
@@ -105,6 +107,8 @@ class NotesViewModel(
             )
 
             repository.insertNote(offlineNote)
+
+            SyncScheduler.scheduleSync(context)
         }
     }
 
@@ -117,11 +121,10 @@ class NotesViewModel(
         viewModelScope.launch {
 
             val token = currentToken
+
             val note = repository.getNoteById(id)
                 ?: return@launch
 
-            // Se a nota ainda nem existe na API,
-            // continua como PENDING_CREATE.
             val newStatus =
                 if (note.remoteId == null) {
                     SyncStatus.PENDING_CREATE
@@ -129,8 +132,6 @@ class NotesViewModel(
                     SyncStatus.PENDING_UPDATE
                 }
 
-            // Guarda PRIMEIRO no Room.
-            // Assim funciona mesmo sem Internet.
             val updatedNote = note.copy(
                 title = title,
                 content = content,
@@ -138,35 +139,42 @@ class NotesViewModel(
                 syncStatus = newStatus
             )
 
+            // Guarda primeiro no Room.
             repository.updateNote(updatedNote)
 
-            // Se não existir token, fica pendente.
             if (token == null) {
+                SyncScheduler.scheduleSync(context)
                 return@launch
             }
 
-            // Se já existe na API, tenta sincronizar.
-            if (updatedNote.remoteId != null) {
+            // Se ainda não existe na API,
+            // fica como PENDING_CREATE.
+            if (updatedNote.remoteId == null) {
+                SyncScheduler.scheduleSync(context)
+                return@launch
+            }
 
-                try {
+            try {
+                repository.updateRemoteNote(
+                    token = token,
+                    id = updatedNote.remoteId,
+                    title = title,
+                    content = content
+                )
 
-                    repository.updateRemoteNote(
-                        token = token,
-                        id = updatedNote.remoteId,
-                        title = title,
-                        content = content
+                repository.updateNote(
+                    updatedNote.copy(
+                        syncStatus = SyncStatus.SYNCED
                     )
+                )
 
-                    repository.updateNote(
-                        updatedNote.copy(
-                            syncStatus = SyncStatus.SYNCED
-                        )
-                    )
+                // A API respondeu corretamente.
+                _remoteError.value = null
 
-                } catch (e: Exception) {
-                    // Sem Internet:
-                    // fica PENDING_UPDATE no Room.
-                }
+            } catch (e: Exception) {
+
+                // Fica PENDING_UPDATE no Room.
+                SyncScheduler.scheduleSync(context)
             }
         }
     }
@@ -174,21 +182,25 @@ class NotesViewModel(
     fun deleteNote(note: Note) {
         viewModelScope.launch {
 
-            // Se a nota nunca foi enviada para a API,
-            // apaga apenas do Room.
+            // A nota nunca chegou à API.
             if (note.remoteId == null) {
                 repository.deleteNote(note)
                 return@launch
             }
 
-            // Se existe na API, marcamos primeiro como pendente.
             val pendingDeleteNote = note.copy(
                 syncStatus = SyncStatus.PENDING_DELETE
             )
 
+            // Marca primeiro no Room.
             repository.updateNote(pendingDeleteNote)
 
-            val token = currentToken ?: return@launch
+            val token = currentToken
+
+            if (token == null) {
+                SyncScheduler.scheduleSync(context)
+                return@launch
+            }
 
             try {
                 repository.deleteRemoteNote(
@@ -196,13 +208,15 @@ class NotesViewModel(
                     id = note.remoteId
                 )
 
-                // Só removemos definitivamente do Room
-                // se a API tiver apagado com sucesso.
                 repository.deleteNote(pendingDeleteNote)
 
+                // A API respondeu corretamente.
+                _remoteError.value = null
+
             } catch (e: Exception) {
-                // Sem Internet / API desligada:
-                // fica PENDING_DELETE e não crasha.
+
+                // Fica PENDING_DELETE.
+                SyncScheduler.scheduleSync(context)
             }
         }
     }
@@ -217,40 +231,41 @@ class NotesViewModel(
             val note = repository.getNoteById(id)
                 ?: return@launch
 
-            // Nota criada offline e que nunca chegou à API:
-            // pode ser apagada definitivamente do Room.
+            // A nota nunca chegou à API.
             if (note.remoteId == null) {
                 repository.deleteNote(note)
                 return@launch
             }
 
-            // A nota existe na API.
-            // Marcamos primeiro como pendente de eliminação.
             val pendingDeleteNote = note.copy(
                 syncStatus = SyncStatus.PENDING_DELETE
             )
 
+            // Marca primeiro no Room.
             repository.updateNote(pendingDeleteNote)
 
-            val token = currentToken ?: return@launch
+            val token = currentToken
+
+            if (token == null) {
+                SyncScheduler.scheduleSync(context)
+                return@launch
+            }
 
             try {
-
                 repository.deleteRemoteNote(
                     token = token,
                     id = note.remoteId
                 )
 
-                // Se conseguiu apagar na API,
-                // apagamos definitivamente do Room.
                 repository.deleteNote(pendingDeleteNote)
+
+                // A API respondeu corretamente.
+                _remoteError.value = null
 
             } catch (e: Exception) {
 
-                // API desligada / sem Internet.
-                // A nota continua no Room como PENDING_DELETE.
-                // Como o DAO a esconde da lista,
-                // para o utilizador ela já aparece como apagada.
+                // Fica PENDING_DELETE.
+                SyncScheduler.scheduleSync(context)
             }
         }
     }
@@ -262,6 +277,7 @@ class NotesViewModel(
         viewModelScope.launch {
 
             try {
+                // Envia primeiro tudo o que ficou pendente.
                 repository.syncPendingCreates(
                     token = token,
                     userId = userId
@@ -277,20 +293,27 @@ class NotesViewModel(
                     userId = userId
                 )
 
+                // Depois atualiza o Room a partir da API.
                 repository.syncRemoteNotesToLocal(
                     token = token,
                     userId = userId
                 )
 
-                val result = repository.getRemoteNotes(token)
+                val result =
+                    repository.getRemoteNotes(token)
 
                 _remoteNotes.value = result
+
+                // Sincronização concluída com sucesso.
                 _remoteError.value = null
 
             } catch (e: Exception) {
 
                 _remoteError.value =
-                    "Não foi possível carregar as notas da API."
+                    "Não foi possível sincronizar com a API."
+
+                // Agenda nova tentativa quando houver condições.
+                SyncScheduler.scheduleSync(context)
             }
         }
     }

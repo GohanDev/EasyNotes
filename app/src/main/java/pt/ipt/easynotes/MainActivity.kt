@@ -3,37 +3,61 @@ package pt.ipt.easynotes
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.activity.compose.setContent
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import pt.ipt.easynotes.auth.BiometricAuthenticator
 import pt.ipt.easynotes.data.AuthRepository
 import pt.ipt.easynotes.data.NotesDatabase
 import pt.ipt.easynotes.data.NotesRepository
 import pt.ipt.easynotes.data.SessionManager
-import pt.ipt.easynotes.ui.AboutScreen
+import pt.ipt.easynotes.databinding.ActivityMainBinding
 import pt.ipt.easynotes.ui.AuthViewModel
 import pt.ipt.easynotes.ui.AuthViewModelFactory
-import pt.ipt.easynotes.ui.LoginScreen
-import pt.ipt.easynotes.ui.NoteEditorScreen
-import pt.ipt.easynotes.ui.NotesScreen
 import pt.ipt.easynotes.ui.NotesViewModel
 import pt.ipt.easynotes.ui.NotesViewModelFactory
-import pt.ipt.easynotes.ui.RegisterScreen
-import pt.ipt.easynotes.ui.theme.EasyNotesTheme
+import pt.ipt.easynotes.ui.fragments.AboutFragment
+import pt.ipt.easynotes.ui.fragments.LoginFragment
+import pt.ipt.easynotes.ui.fragments.NoteEditorFragment
+import pt.ipt.easynotes.ui.fragments.NotesFragment
+import pt.ipt.easynotes.ui.fragments.RegisterFragment
 
 class MainActivity : FragmentActivity() {
 
+    lateinit var authViewModel: AuthViewModel
+        private set
+
+    lateinit var notesViewModel: NotesViewModel
+        private set
+
+    lateinit var biometricAuthenticator: BiometricAuthenticator
+        private set
+
+    private lateinit var binding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        createViewModels()
+
+        biometricAuthenticator = BiometricAuthenticator(this)
+
+        requestRequiredPermissions()
+
+        if (savedInstanceState == null) {
+            showLogin()
+        }
+
+        if (authViewModel.uiState.value.token == null) {
+            authViewModel.restoreSession()
+        }
+    }
+
+    private fun createViewModels() {
 
         val database = NotesDatabase.getDatabase(this)
 
@@ -41,13 +65,14 @@ class MainActivity : FragmentActivity() {
             database.noteDao()
         )
 
-        val notesViewModelFactory = NotesViewModelFactory(
-            notesRepository
+        val notesFactory = NotesViewModelFactory(
+            repository = notesRepository,
+            context = applicationContext
         )
 
-        val notesViewModel = ViewModelProvider(
+        notesViewModel = ViewModelProvider(
             this,
-            notesViewModelFactory
+            notesFactory
         )[NotesViewModel::class.java]
 
         val sessionManager = SessionManager(
@@ -58,268 +83,113 @@ class MainActivity : FragmentActivity() {
             sessionManager
         )
 
-        val authViewModelFactory = AuthViewModelFactory(
+        val authFactory = AuthViewModelFactory(
             authRepository
         )
 
-        val authViewModel = ViewModelProvider(
+        authViewModel = ViewModelProvider(
             this,
-            authViewModelFactory
+            authFactory
         )[AuthViewModel::class.java]
+    }
 
-        val biometricAuthenticator =
-            BiometricAuthenticator(this)
+    private fun requestRequiredPermissions() {
 
-        setContent {
+        val permissions = mutableListOf<String>()
 
-            EasyNotesTheme {
+        if (
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions.add(
+                Manifest.permission.CAMERA
+            )
+        }
 
-                val context = LocalContext.current
+        if (permissions.isNotEmpty()) {
+            requestPermissions(
+                permissions.toTypedArray(),
+                100
+            )
+        }
+    }
 
-                // Permissão de acesso à rede local
-                LaunchedEffect(Unit) {
+    fun showLogin() {
 
-                    val hasPermission =
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.ACCESS_LOCAL_NETWORK
-                        ) == PackageManager.PERMISSION_GRANTED
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                R.id.fragmentContainer,
+                LoginFragment()
+            )
+            .commit()
+    }
 
-                    if (!hasPermission) {
-                        requestPermissions(
-                            arrayOf(
-                                Manifest.permission.ACCESS_LOCAL_NETWORK
-                            ),
-                            100
-                        )
-                    }
-                }
+    fun showRegister() {
 
-                val navController = rememberNavController()
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                R.id.fragmentContainer,
+                RegisterFragment()
+            )
+            .addToBackStack(null)
+            .commit()
+    }
 
-                // Tenta recuperar a sessão guardada
-                LaunchedEffect(Unit) {
-                    authViewModel.restoreSession()
-                }
+    fun showNotes() {
 
-                NavHost(
-                    navController = navController,
-                    startDestination = "login"
-                ) {
+        supportFragmentManager.popBackStack(
+            null,
+            FragmentManager.POP_BACK_STACK_INCLUSIVE
+        )
 
-                    // LOGIN
-                    composable("login") {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                R.id.fragmentContainer,
+                NotesFragment()
+            )
+            .commit()
+    }
 
-                        val authState by authViewModel
-                            .uiState
-                            .collectAsStateWithLifecycle()
+    fun showEditor(noteId: Int? = null) {
 
-                        LaunchedEffect(
-                            authState.token,
-                            authState.restoredSession
-                        ) {
+        val fragment =
+            NoteEditorFragment.newInstance(noteId)
 
-                            if (authState.token != null) {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                R.id.fragmentContainer,
+                fragment
+            )
+            .addToBackStack(null)
+            .commit()
+    }
 
-                                if (authState.restoredSession) {
+    fun showAbout() {
 
-                                    if (
-                                        biometricAuthenticator
-                                            .canAuthenticate()
-                                    ) {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                R.id.fragmentContainer,
+                AboutFragment()
+            )
+            .commit()
+    }
 
-                                        biometricAuthenticator.authenticate(
-                                            onSuccess = {
+    fun goBack() {
 
-                                                navController.navigate(
-                                                    "notes"
-                                                ) {
-                                                    popUpTo("login") {
-                                                        inclusive = true
-                                                    }
-                                                }
-                                            },
-                                            onError = {
-                                                // Fica no login
-                                            }
-                                        )
-                                    }
+        if (supportFragmentManager.backStackEntryCount > 0) {
 
-                                } else {
+            supportFragmentManager.popBackStack()
 
-                                    // Login normal com email/password
-                                    navController.navigate("notes") {
-                                        popUpTo("login") {
-                                            inclusive = true
-                                        }
-                                    }
-                                }
-                            }
-                        }
+        } else {
 
-                        LoginScreen(
-                            isLoading = authState.isLoading,
-                            errorMessage = authState.errorMessage,
-                            onLogin = { email, password ->
-
-                                authViewModel.login(
-                                    email = email,
-                                    password = password
-                                )
-                            },
-                            onRegisterClick = {
-                                navController.navigate("register")
-                            }
-                        )
-                    }
-
-                    // LISTA DE NOTAS
-                    composable("notes") {
-
-                        val authState by authViewModel
-                            .uiState
-                            .collectAsStateWithLifecycle()
-
-                        LaunchedEffect(
-                            authState.token,
-                            authState.user
-                        ) {
-
-                            val token = authState.token
-                            val user = authState.user
-
-                            if (
-                                token != null &&
-                                user != null
-                            ) {
-
-                                notesViewModel.setCurrentUser(
-                                    userId = user.id,
-                                    token = token
-                                )
-
-                                notesViewModel.loadRemoteNotes(
-                                    token = token,
-                                    userId = user.id
-                                )
-                            }
-                        }
-
-                        NotesScreen(
-                            viewModel = notesViewModel,
-
-                            onAddNote = {
-                                navController.navigate("editor")
-                            },
-
-                            onNoteClick = { noteId ->
-                                navController.navigate(
-                                    "editor/$noteId"
-                                )
-                            },
-
-                            onAboutClick = {
-                                navController.navigate("about")
-                            },
-
-                            onLogoutClick = {
-
-                                authViewModel.logout()
-
-                                navController.navigate("login") {
-                                    popUpTo("notes") {
-                                        inclusive = true
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    // CRIAR NOTA
-                    composable("editor") {
-
-                        NoteEditorScreen(
-                            viewModel = notesViewModel,
-                            onBack = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    // EDITAR NOTA
-                    composable(
-                        "editor/{noteId}"
-                    ) { backStackEntry ->
-
-                        val noteId =
-                            backStackEntry.arguments
-                                ?.getString("noteId")
-                                ?.toIntOrNull()
-
-                        NoteEditorScreen(
-                            viewModel = notesViewModel,
-                            noteId = noteId,
-                            onBack = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    // SOBRE
-                    composable("about") {
-
-                        AboutScreen(
-                            onBack = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    // REGISTO
-                    composable("register") {
-
-                        val authState by authViewModel
-                            .uiState
-                            .collectAsStateWithLifecycle()
-
-                        LaunchedEffect(
-                            authState.registrationSuccessful
-                        ) {
-
-                            if (
-                                authState.registrationSuccessful
-                            ) {
-
-                                authViewModel
-                                    .clearRegistrationSuccess()
-
-                                navController.popBackStack()
-                            }
-                        }
-
-                        RegisterScreen(
-                            isLoading = authState.isLoading,
-                            errorMessage = authState.errorMessage,
-
-                            onRegister = {
-                                    name,
-                                    email,
-                                    password ->
-
-                                authViewModel.register(
-                                    name = name,
-                                    email = email,
-                                    password = password
-                                )
-                            },
-
-                            onBackToLogin = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-                }
-            }
+            showLogin()
         }
     }
 }

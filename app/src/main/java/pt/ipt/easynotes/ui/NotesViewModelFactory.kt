@@ -1,11 +1,13 @@
 package pt.ipt.easynotes.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import pt.ipt.easynotes.data.NotesRepository
 
 class NotesViewModelFactory(
-    private val repository: NotesRepository
+    private val repository: NotesRepository,
+    private val context: Context
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -14,7 +16,10 @@ class NotesViewModelFactory(
     ): T {
 
         if (modelClass.isAssignableFrom(NotesViewModel::class.java)) {
-            return NotesViewModel(repository) as T
+            return NotesViewModel(
+                repository = repository,
+                context = context.applicationContext
+            ) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")
