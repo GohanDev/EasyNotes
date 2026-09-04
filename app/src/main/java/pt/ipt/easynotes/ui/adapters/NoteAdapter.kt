@@ -8,9 +8,13 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import pt.ipt.easynotes.MainActivity
+import pt.ipt.easynotes.R
 import pt.ipt.easynotes.data.Note
 import pt.ipt.easynotes.databinding.ItemNoteBinding
 
+/**
+ * Adapter responsável por apresentar as notas no RecyclerView.
+ */
 class NoteAdapter(
     private val activity: MainActivity
 ) : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
@@ -79,7 +83,7 @@ class NoteAdapter(
 
             AlertDialog.Builder(activity)
                 .setView(image)
-                .setPositiveButton("Fechar", null)
+                .setPositiveButton(R.string.close, null)
                 .show()
         }
     }

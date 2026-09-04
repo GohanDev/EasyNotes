@@ -4,16 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.biometric.BiometricPrompt
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import kotlinx.coroutines.launch
+import androidx.fragment.app.Fragment
 import pt.ipt.easynotes.MainActivity
 import pt.ipt.easynotes.R
 import pt.ipt.easynotes.databinding.FragmentLoginBinding
+import pt.ipt.easynotes.ui.AuthUiState
 
+/**
+ * Fragment inicial da aplicação. Permite iniciar sessão, recuperar uma sessão
+ * guardada e aceder ao ecrã Sobre antes da autenticação.
+ */
 class LoginFragment : Fragment() {
 
     private lateinit var binding: FragmentLoginBinding
@@ -38,7 +39,12 @@ class LoginFragment : Fragment() {
             val email = binding.editEmail.text.toString().trim()
             val password = binding.editPassword.text.toString()
 
-            activity.authViewModel.login(email, password)
+            activity.authViewModel.login(
+                email = email,
+                password = password
+            ) { state ->
+                handleAuthenticationState(state)
+            }
         }
 
         binding.buttonRegister.setOnClickListener {
@@ -50,43 +56,47 @@ class LoginFragment : Fragment() {
             activity.showAbout()
         }
 
-        observeAuthentication()
+        // Tenta recuperar uma sessão guardada quando o ecrã inicial é apresentado.
+        activity.authViewModel.restoreSession { state ->
+            handleAuthenticationState(state)
+        }
     }
 
-    private fun observeAuthentication() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                activity.authViewModel.uiState.collect { state ->
+    /**
+     * Atualiza os elementos do ecrã de acordo com o resultado da autenticação.
+     */
+    private fun handleAuthenticationState(state: AuthUiState) {
+        binding.buttonLogin.isEnabled = !state.isLoading
+        binding.buttonRegister.isEnabled = !state.isLoading
 
-                    binding.buttonLogin.isEnabled = !state.isLoading
-                    binding.buttonRegister.isEnabled = !state.isLoading
-                    binding.buttonLogin.text = if (state.isLoading) {
-                        getString(R.string.logging_in)
-                    } else {
-                        getString(R.string.login)
-                    }
+        binding.buttonLogin.text = if (state.isLoading) {
+            getString(R.string.logging_in)
+        } else {
+            getString(R.string.login)
+        }
 
-                    if (state.errorMessage.isNullOrBlank()) {
-                        binding.textError.visibility = View.GONE
-                    } else {
-                        binding.textError.text = state.errorMessage
-                        binding.textError.visibility = View.VISIBLE
-                    }
+        if (state.errorMessage.isNullOrBlank()) {
+            binding.textError.visibility = View.GONE
+        } else {
+            binding.textError.text = state.errorMessage
+            binding.textError.visibility = View.VISIBLE
+        }
 
-                    if (state.token != null && !sessionHandled) {
-                        sessionHandled = true
+        if (state.token != null && !sessionHandled) {
+            sessionHandled = true
 
-                        if (state.restoredSession) {
-                            unlockRestoredSession()
-                        } else {
-                            activity.showNotes()
-                        }
-                    }
-                }
+            if (state.restoredSession) {
+                unlockRestoredSession()
+            } else {
+                activity.showNotes()
             }
         }
     }
 
+    /**
+     * Uma sessão recuperada do dispositivo é protegida com autenticação
+     * biométrica ou credencial do dispositivo, quando disponível.
+     */
     private fun unlockRestoredSession() {
         if (activity.biometricAuthenticator.canAuthenticate()) {
             val callback = object : BiometricPrompt.AuthenticationCallback() {
@@ -114,7 +124,7 @@ class LoginFragment : Fragment() {
 
             activity.biometricAuthenticator.authenticate(callback)
         } else {
-            // Se o dispositivo não suportar biometria/PIN, mantém o login visível.
+            // Sem biometria/PIN disponível, mantém o ecrã de login visível.
             sessionHandled = false
         }
     }

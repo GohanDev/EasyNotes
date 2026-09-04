@@ -11,12 +11,14 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 
+/** Dados enviados para autenticar um utilizador. */
 @Serializable
 data class LoginRequest(
     val email: String,
     val password: String
 )
 
+/** Dados públicos de um utilizador devolvidos pela API. */
 @Serializable
 data class UserResponse(
     val id: Int,
@@ -24,12 +26,14 @@ data class UserResponse(
     val email: String
 )
 
+/** Resposta recebida depois de um login válido. */
 @Serializable
 data class LoginResponse(
     val token: String,
     val user: UserResponse
 )
 
+/** Dados enviados para criar uma nova conta. */
 @Serializable
 data class RegisterRequest(
     val name: String,
@@ -37,6 +41,9 @@ data class RegisterRequest(
     val password: String
 )
 
+/**
+ * Serviço responsável pelos pedidos REST de autenticação e sessão.
+ */
 object AuthService {
 
     suspend fun login(

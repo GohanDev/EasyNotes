@@ -4,7 +4,11 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import pt.ipt.easynotes.R
 
+/**
+ * Encapsula a autenticação biométrica ou por credencial do dispositivo.
+ */
 class BiometricAuthenticator(
     private val activity: FragmentActivity
 ) {
@@ -34,8 +38,8 @@ class BiometricAuthenticator(
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Desbloquear EasyNotes")
-            .setSubtitle("Use biometria ou o código do dispositivo.")
+            .setTitle(activity.getString(R.string.biometric_title))
+            .setSubtitle(activity.getString(R.string.biometric_subtitle))
             .setAllowedAuthenticators(authenticators)
             .build()
 

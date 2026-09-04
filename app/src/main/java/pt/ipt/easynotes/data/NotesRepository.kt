@@ -1,38 +1,47 @@
 package pt.ipt.easynotes.data
 
-import kotlinx.coroutines.flow.Flow
 import pt.ipt.easynotes.network.NotesApiService
 
+/**
+ * Repositório responsável pelo acesso às notas.
+ *
+ * Centraliza as operações realizadas no Internal Storage e na API REST,
+ * incluindo a sincronização entre os dois locais.
+ */
 class NotesRepository(
-    private val noteDao: NoteDao
+    private val localStorage: NotesLocalStorage
 ) {
 
-    fun getNotesByUser(
-        userId: Int
-    ): Flow<List<Note>> {
-        return noteDao.getNotesByUser(userId)
+    // Obtém do armazenamento local as notas de um utilizador.
+    fun getNotesByUser(userId: Int): List<Note> {
+        return localStorage.getNotesByUser(userId)
     }
 
-    suspend fun getNoteById(id: Int): Note? {
-        return noteDao.getNoteById(id)
+    // Obtém uma nota local através do seu identificador.
+    fun getNoteById(id: Int): Note? {
+        return localStorage.getNoteById(id)
     }
 
-    suspend fun insertNote(note: Note) {
-        noteDao.insertNote(note)
+    // Insere uma nota no Internal Storage.
+    fun insertNote(note: Note) {
+        localStorage.insertNote(note)
     }
 
-    suspend fun updateNote(note: Note) {
-        noteDao.updateNote(note)
+    // Atualiza uma nota existente no Internal Storage.
+    fun updateNote(note: Note) {
+        localStorage.updateNote(note)
     }
 
-    suspend fun deleteNote(note: Note) {
-        noteDao.deleteNote(note)
+    // Remove uma nota do Internal Storage.
+    fun deleteNote(note: Note) {
+        localStorage.deleteNote(note)
     }
 
-    suspend fun getRemoteNotes(
-        token: String
-    ) = NotesApiService.getNotes(token)
+    // Obtém através da API as notas do utilizador autenticado.
+    suspend fun getRemoteNotes(token: String) =
+        NotesApiService.getNotes(token)
 
+    // Cria uma nota através da API REST.
     suspend fun createRemoteNote(
         token: String,
         title: String,
@@ -43,6 +52,7 @@ class NotesRepository(
         content = content
     )
 
+    // Atualiza uma nota existente através da API REST.
     suspend fun updateRemoteNote(
         token: String,
         id: Int,
@@ -55,6 +65,7 @@ class NotesRepository(
         content = content
     )
 
+    // Remove uma nota através da API REST.
     suspend fun deleteRemoteNote(
         token: String,
         id: Int
@@ -65,38 +76,36 @@ class NotesRepository(
         )
     }
 
+    /**
+     * Atualiza o Internal Storage com o estado atual das notas existentes na API.
+     */
     suspend fun syncRemoteNotesToLocal(
         token: String,
         userId: Int
     ) {
         val remoteNotes = getRemoteNotes(token)
-
-        val remoteIds = remoteNotes.map { it.id }
+        val remoteIds = remoteNotes.map { remoteNote -> remoteNote.id }
 
         if (remoteIds.isEmpty()) {
-
-            noteDao.deleteAllRemoteNotesForUser(
-                userId = userId
-            )
-
+            // A API já não possui notas sincronizadas para este utilizador.
+            localStorage.deleteAllRemoteNotesForUser(userId)
         } else {
-
-            noteDao.deleteMissingRemoteNotes(
+            // Remove localmente notas sincronizadas que deixaram de existir na API.
+            localStorage.deleteMissingRemoteNotes(
                 userId = userId,
                 remoteIds = remoteIds
             )
         }
 
         remoteNotes.forEach { remoteNote ->
-
-            val localNote = noteDao.getNoteByRemoteId(
+            val localNote = localStorage.getNoteByRemoteId(
                 remoteId = remoteNote.id,
                 userId = userId
             )
 
             if (localNote == null) {
-
-                noteDao.insertNote(
+                // A nota ainda não existe localmente e é criada no dispositivo.
+                localStorage.insertNote(
                     Note(
                         remoteId = remoteNote.id,
                         userId = userId,
@@ -105,38 +114,40 @@ class NotesRepository(
                         photoPath = null
                     )
                 )
-
             } else {
-
-                noteDao.updateNote(
+                // A nota já existe e recebe os dados mais recentes da API.
+                localStorage.updateNote(
                     localNote.copy(
                         title = remoteNote.title,
-                        content = remoteNote.content
+                        content = remoteNote.content,
+                        syncStatus = SyncStatus.SYNCED
                     )
                 )
             }
         }
     }
 
+    /**
+     * Envia para a API as notas criadas enquanto não existia ligação ao servidor.
+     */
     suspend fun syncPendingCreates(
         token: String,
         userId: Int
     ) {
-
-        val pendingNotes = noteDao.getNotesBySyncStatus(
+        val pendingNotes = localStorage.getNotesBySyncStatus(
             userId = userId,
             status = SyncStatus.PENDING_CREATE
         )
 
         pendingNotes.forEach { note ->
-
             val remoteNote = createRemoteNote(
                 token = token,
                 title = note.title,
                 content = note.content
             )
 
-            noteDao.updateNote(
+            // Guarda o identificador atribuído pela API e marca a nota como sincronizada.
+            localStorage.updateNote(
                 note.copy(
                     remoteId = remoteNote.id,
                     syncStatus = SyncStatus.SYNCED
@@ -145,19 +156,20 @@ class NotesRepository(
         }
     }
 
+    /**
+     * Envia para a API as alterações locais que ficaram pendentes.
+     */
     suspend fun syncPendingUpdates(
         token: String,
         userId: Int
     ) {
-        val pendingNotes = noteDao.getNotesBySyncStatus(
+        val pendingNotes = localStorage.getNotesBySyncStatus(
             userId = userId,
             status = SyncStatus.PENDING_UPDATE
         )
 
         pendingNotes.forEach { note ->
-
-            val remoteId = note.remoteId
-                ?: return@forEach
+            val remoteId = note.remoteId ?: return@forEach
 
             updateRemoteNote(
                 token = token,
@@ -166,42 +178,41 @@ class NotesRepository(
                 content = note.content
             )
 
-            noteDao.updateNote(
-                note.copy(
-                    syncStatus = SyncStatus.SYNCED
-                )
+            // A API confirmou a atualização.
+            localStorage.updateNote(
+                note.copy(syncStatus = SyncStatus.SYNCED)
             )
         }
     }
 
+    /**
+     * Envia para a API as eliminações que ficaram pendentes.
+     */
     suspend fun syncPendingDeletes(
         token: String,
         userId: Int
     ) {
-        val pendingNotes = noteDao.getNotesBySyncStatus(
+        val pendingNotes = localStorage.getNotesBySyncStatus(
             userId = userId,
             status = SyncStatus.PENDING_DELETE
         )
 
         pendingNotes.forEach { note ->
-
             val remoteId = note.remoteId
 
-            // Se por algum motivo não tiver remoteId,
-            // basta remover localmente.
             if (remoteId == null) {
-                noteDao.deleteNote(note)
+                // Nunca chegou à API, por isso basta removê-la localmente.
+                localStorage.deleteNote(note)
                 return@forEach
             }
 
-            // Apaga primeiro na API.
             deleteRemoteNote(
                 token = token,
                 id = remoteId
             )
 
-            // Só depois remove definitivamente do Room.
-            noteDao.deleteNote(note)
+            // Só é removida localmente depois da confirmação da API.
+            localStorage.deleteNote(note)
         }
     }
 }

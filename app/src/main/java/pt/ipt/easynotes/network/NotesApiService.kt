@@ -12,12 +12,14 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 
+/** Dados enviados para criar ou atualizar uma nota na API. */
 @Serializable
 data class NoteApiRequest(
     val title: String,
     val content: String
 )
 
+/** Nota devolvida pela API REST. */
 @Serializable
 data class NoteApiResponse(
     val id: Int,
@@ -25,6 +27,9 @@ data class NoteApiResponse(
     val content: String
 )
 
+/**
+ * Serviço responsável pelos pedidos REST relacionados com as notas.
+ */
 object NotesApiService {
 
     suspend fun getNotes(

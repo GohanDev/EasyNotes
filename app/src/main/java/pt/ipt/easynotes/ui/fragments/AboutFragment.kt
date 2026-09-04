@@ -9,6 +9,10 @@ import pt.ipt.easynotes.MainActivity
 import pt.ipt.easynotes.R
 import pt.ipt.easynotes.databinding.FragmentAboutBinding
 
+/**
+ * Apresenta a informação académica do projeto e identifica as tecnologias,
+ * bibliotecas e frameworks utilizados na aplicação e na API.
+ */
 class AboutFragment : Fragment() {
 
     private lateinit var binding: FragmentAboutBinding
@@ -28,26 +32,22 @@ class AboutFragment : Fragment() {
 
         activity = requireActivity() as MainActivity
 
-        // Títulos das categorias
         binding.textAndroidTitle.text = getString(R.string.technologies_android)
         binding.textApiTitle.text = getString(R.string.technologies_api)
         binding.textDatabaseTitle.text = getString(R.string.technologies_database)
 
-        // Tecnologias utilizadas na aplicação Android
         binding.textAndroidTechnologies.text = listOf(
             getString(R.string.technology_kotlin),
             getString(R.string.technology_xml_binding),
             getString(R.string.technology_material),
             getString(R.string.technology_fragments),
             getString(R.string.technology_recyclerview),
-            getString(R.string.technology_room),
+            getString(R.string.technology_internal_storage),
+            getString(R.string.technology_shared_preferences),
             getString(R.string.technology_ktor_client),
-            getString(R.string.technology_datastore),
-            getString(R.string.technology_biometric),
-            getString(R.string.technology_workmanager)
+            getString(R.string.technology_biometric)
         ).joinToString("\n\n")
 
-        // Tecnologias utilizadas na API REST
         binding.textApiTechnologies.text = listOf(
             getString(R.string.technology_ktor_server),
             getString(R.string.technology_jwt),
@@ -57,14 +57,17 @@ class AboutFragment : Fragment() {
             getString(R.string.technology_logback)
         ).joinToString("\n\n")
 
-        // Bases de dados utilizadas
         binding.textDatabaseTechnologies.text = listOf(
             getString(R.string.technology_postgresql),
             getString(R.string.technology_h2)
         ).joinToString("\n\n")
 
         binding.buttonBack.setOnClickListener {
-            activity.showLogin()
+            if (activity.authViewModel.uiState.token == null) {
+                activity.showLogin()
+            } else {
+                activity.showNotes()
+            }
         }
     }
 }

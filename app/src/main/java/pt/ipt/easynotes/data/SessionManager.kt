@@ -1,17 +1,10 @@
 package pt.ipt.easynotes.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
-private val Context.dataStore by preferencesDataStore(
-    name = "session"
-)
-
+/**
+ * Dados mínimos necessários para recuperar uma sessão iniciada anteriormente.
+ */
 data class UserSession(
     val token: String,
     val userId: Int,
@@ -19,67 +12,77 @@ data class UserSession(
     val email: String
 )
 
-class SessionManager(
-    private val context: Context
-) {
+/**
+ * Guarda e recupera a sessão do utilizador com SharedPreferences.
+ *
+ * SharedPreferences é adequado neste caso porque a sessão é composta por
+ * poucos valores simples (token, identificador, nome e email).
+ */
+class SessionManager(context: Context) {
 
-    companion object {
-        private val TOKEN =
-            stringPreferencesKey("token")
+    private val preferences = context.applicationContext.getSharedPreferences(
+        PREFERENCES_NAME,
+        Context.MODE_PRIVATE
+    )
 
-        private val USER_ID =
-            intPreferencesKey("user_id")
-
-        private val NAME =
-            stringPreferencesKey("name")
-
-        private val EMAIL =
-            stringPreferencesKey("email")
-    }
-
-    val session: Flow<UserSession?> =
-        context.dataStore.data.map { preferences ->
-
-            val token = preferences[TOKEN]
-            val userId = preferences[USER_ID]
-            val name = preferences[NAME]
-            val email = preferences[EMAIL]
-
-            if (
-                token != null &&
-                userId != null &&
-                name != null &&
-                email != null
-            ) {
-                UserSession(
-                    token = token,
-                    userId = userId,
-                    name = name,
-                    email = email
-                )
-            } else {
-                null
-            }
-        }
-
-    suspend fun saveSession(
+    /**
+     * Guarda os dados da sessão no armazenamento privado da aplicação.
+     */
+    fun saveSession(
         token: String,
         userId: Int,
         name: String,
         email: String
     ) {
-        context.dataStore.edit { preferences ->
-
-            preferences[TOKEN] = token
-            preferences[USER_ID] = userId
-            preferences[NAME] = name
-            preferences[EMAIL] = email
-        }
+        preferences.edit()
+            .putString(KEY_TOKEN, token)
+            .putInt(KEY_USER_ID, userId)
+            .putString(KEY_NAME, name)
+            .putString(KEY_EMAIL, email)
+            .commit()
     }
 
-    suspend fun clearSession() {
-        context.dataStore.edit { preferences ->
-            preferences.clear()
+    /**
+     * Recupera a sessão guardada. Se faltar algum valor obrigatório,
+     * considera-se que não existe uma sessão válida no dispositivo.
+     */
+    fun getSession(): UserSession? {
+        val token = preferences.getString(KEY_TOKEN, null)
+        val userId = preferences.getInt(KEY_USER_ID, -1)
+        val name = preferences.getString(KEY_NAME, null)
+        val email = preferences.getString(KEY_EMAIL, null)
+
+        if (
+            token == null ||
+            userId == -1 ||
+            name == null ||
+            email == null
+        ) {
+            return null
         }
+
+        return UserSession(
+            token = token,
+            userId = userId,
+            name = name,
+            email = email
+        )
+    }
+
+    /**
+     * Remove todos os dados da sessão quando o utilizador termina sessão.
+     */
+    fun clearSession() {
+        preferences.edit()
+            .clear()
+            .commit()
+    }
+
+    companion object {
+        private const val PREFERENCES_NAME = "session"
+        private const val KEY_TOKEN = "token"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_NAME = "name"
+        private const val KEY_EMAIL = "email"
     }
 }

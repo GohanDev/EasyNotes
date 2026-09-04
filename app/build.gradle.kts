@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -46,19 +45,13 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
 
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.room.ktx)
-
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.biometric)
-    implementation(libs.androidx.work.runtime.ktx)
 
-    ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -9,7 +9,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.ViewModelProvider
 import pt.ipt.easynotes.auth.BiometricAuthenticator
 import pt.ipt.easynotes.data.AuthRepository
-import pt.ipt.easynotes.data.NotesDatabase
+import pt.ipt.easynotes.data.NotesLocalStorage
 import pt.ipt.easynotes.data.NotesRepository
 import pt.ipt.easynotes.data.SessionManager
 import pt.ipt.easynotes.databinding.ActivityMainBinding
@@ -23,6 +23,12 @@ import pt.ipt.easynotes.ui.fragments.NoteEditorFragment
 import pt.ipt.easynotes.ui.fragments.NotesFragment
 import pt.ipt.easynotes.ui.fragments.RegisterFragment
 
+/**
+ * Activity principal da aplicação.
+ *
+ * É responsável por criar os ViewModels, pedir a permissão da câmara e trocar
+ * os Fragments apresentados no contentor principal.
+ */
 class MainActivity : FragmentActivity() {
 
     lateinit var authViewModel: AuthViewModel
@@ -43,31 +49,24 @@ class MainActivity : FragmentActivity() {
         setContentView(binding.root)
 
         createViewModels()
-
         biometricAuthenticator = BiometricAuthenticator(this)
-
         requestRequiredPermissions()
 
+        // O login é o ecrã inicial e contém também o acesso ao ecrã Sobre.
         if (savedInstanceState == null) {
             showLogin()
         }
-
-        if (authViewModel.uiState.value.token == null) {
-            authViewModel.restoreSession()
-        }
     }
 
+    /**
+     * Cria os ViewModels e fornece as respetivas dependências.
+     */
     private fun createViewModels() {
-
-        val database = NotesDatabase.getDatabase(this)
-
-        val notesRepository = NotesRepository(
-            database.noteDao()
-        )
+        val localStorage = NotesLocalStorage.getInstance(applicationContext)
+        val notesRepository = NotesRepository(localStorage)
 
         val notesFactory = NotesViewModelFactory(
-            repository = notesRepository,
-            context = applicationContext
+            repository = notesRepository
         )
 
         notesViewModel = ViewModelProvider(
@@ -75,17 +74,9 @@ class MainActivity : FragmentActivity() {
             notesFactory
         )[NotesViewModel::class.java]
 
-        val sessionManager = SessionManager(
-            applicationContext
-        )
-
-        val authRepository = AuthRepository(
-            sessionManager
-        )
-
-        val authFactory = AuthViewModelFactory(
-            authRepository
-        )
+        val sessionManager = SessionManager(applicationContext)
+        val authRepository = AuthRepository(sessionManager)
+        val authFactory = AuthViewModelFactory(authRepository)
 
         authViewModel = ViewModelProvider(
             this,
@@ -93,54 +84,44 @@ class MainActivity : FragmentActivity() {
         )[AuthViewModel::class.java]
     }
 
+    /**
+     * Pede a permissão de câmara necessária para associar fotografias às notas.
+     */
     private fun requestRequiredPermissions() {
-
-        val permissions = mutableListOf<String>()
-
         if (
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.CAMERA
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            permissions.add(
-                Manifest.permission.CAMERA
-            )
-        }
-
-        if (permissions.isNotEmpty()) {
             requestPermissions(
-                permissions.toTypedArray(),
-                100
+                arrayOf(Manifest.permission.CAMERA),
+                CAMERA_PERMISSION_REQUEST_CODE
             )
         }
     }
 
+    // Apresenta o ecrã inicial de autenticação.
     fun showLogin() {
-
         supportFragmentManager
             .beginTransaction()
-            .replace(
-                R.id.fragmentContainer,
-                LoginFragment()
-            )
+            .replace(R.id.fragmentContainer, LoginFragment())
             .commit()
     }
 
+    // Apresenta o ecrã de criação de conta.
     fun showRegister() {
-
         supportFragmentManager
             .beginTransaction()
-            .replace(
-                R.id.fragmentContainer,
-                RegisterFragment()
-            )
+            .replace(R.id.fragmentContainer, RegisterFragment())
             .addToBackStack(null)
             .commit()
     }
 
+    /**
+     * Apresenta a lista de notas e limpa o histórico dos ecrãs de autenticação.
+     */
     fun showNotes() {
-
         supportFragmentManager.popBackStack(
             null,
             FragmentManager.POP_BACK_STACK_INCLUSIVE
@@ -148,48 +129,43 @@ class MainActivity : FragmentActivity() {
 
         supportFragmentManager
             .beginTransaction()
-            .replace(
-                R.id.fragmentContainer,
-                NotesFragment()
-            )
+            .replace(R.id.fragmentContainer, NotesFragment())
             .commit()
     }
 
+    /**
+     * Abre o editor. Um noteId nulo indica criação; caso contrário é edição.
+     */
     fun showEditor(noteId: Int? = null) {
-
-        val fragment =
-            NoteEditorFragment.newInstance(noteId)
+        val fragment = NoteEditorFragment.newInstance(noteId)
 
         supportFragmentManager
             .beginTransaction()
-            .replace(
-                R.id.fragmentContainer,
-                fragment
-            )
+            .replace(R.id.fragmentContainer, fragment)
             .addToBackStack(null)
             .commit()
     }
 
+    // Apresenta a informação académica e técnica exigida pelo enunciado.
     fun showAbout() {
-
         supportFragmentManager
             .beginTransaction()
-            .replace(
-                R.id.fragmentContainer,
-                AboutFragment()
-            )
+            .replace(R.id.fragmentContainer, AboutFragment())
             .commit()
     }
 
+    /**
+     * Regressa ao Fragment anterior; sem histórico, volta ao login.
+     */
     fun goBack() {
-
         if (supportFragmentManager.backStackEntryCount > 0) {
-
             supportFragmentManager.popBackStack()
-
         } else {
-
             showLogin()
         }
+    }
+
+    companion object {
+        private const val CAMERA_PERMISSION_REQUEST_CODE = 100
     }
 }

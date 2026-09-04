@@ -14,19 +14,22 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import pt.ipt.easynotes.MainActivity
 import pt.ipt.easynotes.R
 import pt.ipt.easynotes.databinding.FragmentNoteEditorBinding
 import java.io.File
 import java.io.FileOutputStream
 
+/**
+ * Fragment utilizado para criar, editar e eliminar notas e para associar
+ * fotografias tiradas com a câmara do dispositivo.
+ */
 class NoteEditorFragment : Fragment() {
 
     companion object {
         private const val ARG_NOTE_ID = "noteId"
         private const val CAMERA_REQUEST_CODE = 200
+        private const val CAMERA_PERMISSION_REQUEST_CODE = 101
 
         fun newInstance(noteId: Int?): NoteEditorFragment {
             val fragment = NoteEditorFragment()
@@ -83,39 +86,44 @@ class NoteEditorFragment : Fragment() {
         }
     }
 
+    /**
+     * Configura o ecrã de acordo com a operação: criação ou edição.
+     */
     private fun configureScreen() {
         if (noteId == null) {
             binding.textHeading.text = getString(R.string.new_note)
-            binding.textSubtitle.text = "Registe uma nova ideia ou apontamento."
+            binding.textSubtitle.text = getString(R.string.new_note_subtitle)
             binding.buttonDelete.visibility = View.GONE
         } else {
             binding.textHeading.text = getString(R.string.edit_note)
-            binding.textSubtitle.text = "Atualize o conteúdo da sua nota."
+            binding.textSubtitle.text = getString(R.string.edit_note_subtitle)
             binding.buttonDelete.visibility = View.VISIBLE
             loadNote()
         }
     }
 
+    // Carrega do Internal Storage os dados da nota que está a ser editada.
     private fun loadNote() {
         val id = noteId ?: return
+        val note = activity.notesViewModel.getNoteById(id) ?: return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val note = activity.notesViewModel.getNoteById(id) ?: return@launch
+        binding.editTitle.setText(note.title)
+        binding.editContent.setText(note.content)
+        photoPath = note.photoPath
 
-            binding.editTitle.setText(note.title)
-            binding.editContent.setText(note.content)
-            photoPath = note.photoPath
+        if (!photoPath.isNullOrBlank()) {
+            val bitmap = BitmapFactory.decodeFile(photoPath)
 
-            if (!photoPath.isNullOrBlank()) {
-                val bitmap = BitmapFactory.decodeFile(photoPath)
-                if (bitmap != null) {
-                    binding.imagePhoto.setImageBitmap(bitmap)
-                    binding.imagePhoto.visibility = View.VISIBLE
-                }
+            if (bitmap != null) {
+                binding.imagePhoto.setImageBitmap(bitmap)
+                binding.imagePhoto.visibility = View.VISIBLE
             }
         }
     }
 
+    /**
+     * Valida título e conteúdo antes de criar ou atualizar a nota.
+     */
     private fun saveNote() {
         val title = binding.editTitle.text.toString().trim()
         val content = binding.editContent.text.toString().trim()
@@ -130,6 +138,9 @@ class NoteEditorFragment : Fragment() {
             return
         }
 
+        // Evita vários pedidos enquanto a operação de gravação está em curso.
+        binding.buttonSave.isEnabled = false
+
         val id = noteId
 
         if (id == null) {
@@ -137,19 +148,25 @@ class NoteEditorFragment : Fragment() {
                 title = title,
                 content = content,
                 photoPath = photoPath
-            )
+            ) {
+                activity.goBack()
+            }
         } else {
             activity.notesViewModel.updateNote(
                 id = id,
                 title = title,
                 content = content,
                 photoPath = photoPath
-            )
+            ) {
+                activity.goBack()
+            }
         }
-
-        activity.goBack()
     }
 
+    /**
+     * Pede confirmação antes de eliminar uma nota, conforme o requisito de
+     * validação das operações de eliminação.
+     */
     private fun confirmDelete() {
         val id = noteId ?: return
 
@@ -158,12 +175,16 @@ class NoteEditorFragment : Fragment() {
             .setMessage(R.string.delete_note_confirmation)
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.delete) { _, _ ->
-                activity.notesViewModel.deleteNoteById(id)
-                activity.goBack()
+                activity.notesViewModel.deleteNoteById(id) {
+                    activity.goBack()
+                }
             }
             .show()
     }
 
+    /**
+     * Verifica a permissão e abre a aplicação de câmara disponível no dispositivo.
+     */
     private fun openCamera() {
         val hasPermission = ContextCompat.checkSelfPermission(
             requireContext(),
@@ -172,7 +193,10 @@ class NoteEditorFragment : Fragment() {
 
         if (!hasPermission) {
             binding.textCameraError.visibility = View.VISIBLE
-            requestPermissions(arrayOf(Manifest.permission.CAMERA), 101)
+            requestPermissions(
+                arrayOf(Manifest.permission.CAMERA),
+                CAMERA_PERMISSION_REQUEST_CODE
+            )
             return
         }
 
@@ -182,7 +206,14 @@ class NoteEditorFragment : Fragment() {
         startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    /**
+     * Recebe a fotografia capturada pela câmara e guarda-a no Internal Storage.
+     */
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode != CAMERA_REQUEST_CODE || resultCode != Activity.RESULT_OK) {

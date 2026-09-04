@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import pt.ipt.easynotes.data.AuthRepository
 
+/**
+ * Factory que fornece o AuthRepository ao AuthViewModel.
+ */
 class AuthViewModelFactory(
     private val repository: AuthRepository
 ) : ViewModelProvider.Factory {

@@ -1,72 +1,68 @@
 package pt.ipt.easynotes.ui
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pt.ipt.easynotes.data.Note
 import pt.ipt.easynotes.data.NotesRepository
-import pt.ipt.easynotes.data.SyncScheduler
 import pt.ipt.easynotes.data.SyncStatus
-import pt.ipt.easynotes.network.NoteApiResponse
 
+/**
+ * ViewModel responsável pelas operações sobre as notas.
+ *
+ * Mantém a identificação do utilizador autenticado, coordena o acesso ao
+ * Internal Storage e comunica com a API REST através do repositório.
+ */
 class NotesViewModel(
-    private val repository: NotesRepository,
-    private val context: Context
+    private val repository: NotesRepository
 ) : ViewModel() {
-
-    private val _notes =
-        MutableStateFlow<List<Note>>(emptyList())
-
-    val notes: StateFlow<List<Note>> =
-        _notes.asStateFlow()
-
-    private val _remoteNotes =
-        MutableStateFlow<List<NoteApiResponse>>(emptyList())
-
-    val remoteNotes: StateFlow<List<NoteApiResponse>> =
-        _remoteNotes.asStateFlow()
-
-    private val _remoteError =
-        MutableStateFlow<String?>(null)
-
-    val remoteError: StateFlow<String?> =
-        _remoteError.asStateFlow()
 
     private var currentUserId: Int? = null
     private var currentToken: String? = null
 
+    /**
+     * Define o utilizador cujas notas devem ser utilizadas nesta sessão.
+     */
     fun setCurrentUser(
         userId: Int,
         token: String
     ) {
         currentUserId = userId
         currentToken = token
-
-        viewModelScope.launch {
-            repository
-                .getNotesByUser(userId)
-                .collect { userNotes ->
-                    _notes.value = userNotes
-                }
-        }
     }
 
+    /**
+     * Devolve diretamente do Internal Storage as notas do utilizador atual.
+     */
+    fun getCurrentNotes(): List<Note> {
+        val userId = currentUserId ?: return emptyList()
+        return repository.getNotesByUser(userId)
+    }
+
+    // Obtém uma nota local através do seu identificador.
+    fun getNoteById(id: Int): Note? {
+        return repository.getNoteById(id)
+    }
+
+    /**
+     * Cria uma nota.
+     *
+     * Se a API estiver disponível, a nota fica imediatamente sincronizada.
+     * Se a comunicação falhar, fica guardada no Internal Storage como
+     * PENDING_CREATE. A aplicação tentará sincronizá-la quando o utilizador
+     * voltar ao ecrã das notas com ligação à Internet.
+     */
     fun addNote(
         title: String,
         content: String,
-        photoPath: String? = null
+        photoPath: String? = null,
+        onComplete: () -> Unit
     ) {
         viewModelScope.launch {
-
             val userId = currentUserId ?: return@launch
             val token = currentToken
 
             if (token != null) {
-
                 try {
                     val remoteNote = repository.createRemoteNote(
                         token = token,
@@ -74,63 +70,58 @@ class NotesViewModel(
                         content = content
                     )
 
-                    val note = Note(
-                        remoteId = remoteNote.id,
-                        userId = userId,
-                        title = title,
-                        content = content,
-                        photoPath = photoPath,
-                        syncStatus = SyncStatus.SYNCED
+                    repository.insertNote(
+                        Note(
+                            remoteId = remoteNote.id,
+                            userId = userId,
+                            title = title,
+                            content = content,
+                            photoPath = photoPath,
+                            syncStatus = SyncStatus.SYNCED
+                        )
                     )
 
-                    repository.insertNote(note)
-
-                    // A comunicação com a API teve sucesso.
-                    // Remove uma eventual mensagem de erro antiga.
-                    _remoteError.value = null
-
+                    onComplete()
                     return@launch
-
                 } catch (e: Exception) {
-                    // API indisponível:
-                    // continua e guarda localmente.
+                    // Se a API estiver indisponível, continua em modo offline.
                 }
             }
 
-            val offlineNote = Note(
-                remoteId = null,
-                userId = userId,
-                title = title,
-                content = content,
-                photoPath = photoPath,
-                syncStatus = SyncStatus.PENDING_CREATE
+            repository.insertNote(
+                Note(
+                    remoteId = null,
+                    userId = userId,
+                    title = title,
+                    content = content,
+                    photoPath = photoPath,
+                    syncStatus = SyncStatus.PENDING_CREATE
+                )
             )
 
-            repository.insertNote(offlineNote)
-
-            SyncScheduler.scheduleSync(context)
+            onComplete()
         }
     }
 
+    /**
+     * Atualiza primeiro a nota no Internal Storage para que a alteração não se
+     * perca quando não existe ligação à Internet.
+     */
     fun updateNote(
         id: Int,
         title: String,
         content: String,
-        photoPath: String? = null
+        photoPath: String? = null,
+        onComplete: () -> Unit
     ) {
         viewModelScope.launch {
+            val note = repository.getNoteById(id) ?: return@launch
 
-            val token = currentToken
-
-            val note = repository.getNoteById(id)
-                ?: return@launch
-
-            val newStatus =
-                if (note.remoteId == null) {
-                    SyncStatus.PENDING_CREATE
-                } else {
-                    SyncStatus.PENDING_UPDATE
-                }
+            val newStatus = if (note.remoteId == null) {
+                SyncStatus.PENDING_CREATE
+            } else {
+                SyncStatus.PENDING_UPDATE
+            }
 
             val updatedNote = note.copy(
                 title = title,
@@ -139,18 +130,14 @@ class NotesViewModel(
                 syncStatus = newStatus
             )
 
-            // Guarda primeiro no Room.
+            // A alteração local fica concluída antes de regressar à lista.
             repository.updateNote(updatedNote)
+            onComplete()
 
-            if (token == null) {
-                SyncScheduler.scheduleSync(context)
-                return@launch
-            }
+            val token = currentToken
 
-            // Se ainda não existe na API,
-            // fica como PENDING_CREATE.
-            if (updatedNote.remoteId == null) {
-                SyncScheduler.scheduleSync(context)
+            // Se ainda não existir no servidor, será criada na próxima sincronização.
+            if (token == null || updatedNote.remoteId == null) {
                 return@launch
             }
 
@@ -163,121 +150,72 @@ class NotesViewModel(
                 )
 
                 repository.updateNote(
-                    updatedNote.copy(
-                        syncStatus = SyncStatus.SYNCED
-                    )
+                    updatedNote.copy(syncStatus = SyncStatus.SYNCED)
                 )
-
-                // A API respondeu corretamente.
-                _remoteError.value = null
-
             } catch (e: Exception) {
-
-                // Fica PENDING_UPDATE no Room.
-                SyncScheduler.scheduleSync(context)
+                // Mantém PENDING_UPDATE para a próxima sincronização.
             }
         }
     }
 
-    fun deleteNote(note: Note) {
-        viewModelScope.launch {
-
-            // A nota nunca chegou à API.
-            if (note.remoteId == null) {
-                repository.deleteNote(note)
-                return@launch
-            }
-
-            val pendingDeleteNote = note.copy(
-                syncStatus = SyncStatus.PENDING_DELETE
-            )
-
-            // Marca primeiro no Room.
-            repository.updateNote(pendingDeleteNote)
-
-            val token = currentToken
-
-            if (token == null) {
-                SyncScheduler.scheduleSync(context)
-                return@launch
-            }
-
-            try {
-                repository.deleteRemoteNote(
-                    token = token,
-                    id = note.remoteId
-                )
-
-                repository.deleteNote(pendingDeleteNote)
-
-                // A API respondeu corretamente.
-                _remoteError.value = null
-
-            } catch (e: Exception) {
-
-                // Fica PENDING_DELETE.
-                SyncScheduler.scheduleSync(context)
-            }
-        }
-    }
-
-    suspend fun getNoteById(id: Int): Note? {
-        return repository.getNoteById(id)
-    }
-
-    fun deleteNoteById(id: Int) {
-        viewModelScope.launch {
-
-            val note = repository.getNoteById(id)
-                ?: return@launch
-
-            // A nota nunca chegou à API.
-            if (note.remoteId == null) {
-                repository.deleteNote(note)
-                return@launch
-            }
-
-            val pendingDeleteNote = note.copy(
-                syncStatus = SyncStatus.PENDING_DELETE
-            )
-
-            // Marca primeiro no Room.
-            repository.updateNote(pendingDeleteNote)
-
-            val token = currentToken
-
-            if (token == null) {
-                SyncScheduler.scheduleSync(context)
-                return@launch
-            }
-
-            try {
-                repository.deleteRemoteNote(
-                    token = token,
-                    id = note.remoteId
-                )
-
-                repository.deleteNote(pendingDeleteNote)
-
-                // A API respondeu corretamente.
-                _remoteError.value = null
-
-            } catch (e: Exception) {
-
-                // Fica PENDING_DELETE.
-                SyncScheduler.scheduleSync(context)
-            }
-        }
-    }
-
-    fun loadRemoteNotes(
-        token: String,
-        userId: Int
+    /**
+     * Elimina uma nota através do identificador local.
+     *
+     * Se a nota já existir na API, fica marcada como PENDING_DELETE e desaparece
+     * da lista. A eliminação no servidor será tentada imediatamente e, em caso
+     * de falha, novamente quando o utilizador regressar ao ecrã das notas.
+     */
+    fun deleteNoteById(
+        id: Int,
+        onComplete: () -> Unit
     ) {
         viewModelScope.launch {
+            val note = repository.getNoteById(id) ?: return@launch
+
+            if (note.remoteId == null) {
+                // Nunca foi criada na API, portanto basta removê-la localmente.
+                repository.deleteNote(note)
+                onComplete()
+                return@launch
+            }
+
+            val pendingDeleteNote = note.copy(
+                syncStatus = SyncStatus.PENDING_DELETE
+            )
+
+            repository.updateNote(pendingDeleteNote)
+            onComplete()
+
+            val token = currentToken ?: return@launch
 
             try {
-                // Envia primeiro tudo o que ficou pendente.
+                repository.deleteRemoteNote(
+                    token = token,
+                    id = note.remoteId
+                )
+
+                // Só desaparece definitivamente do ficheiro após confirmação da API.
+                repository.deleteNote(pendingDeleteNote)
+            } catch (e: Exception) {
+                // Mantém PENDING_DELETE para a próxima sincronização.
+            }
+        }
+    }
+
+    /**
+     * Sincroniza as operações pendentes e atualiza o Internal Storage com o
+     * estado atual das notas existentes na API.
+     *
+     * Esta função é chamada quando o utilizador entra ou regressa ao ecrã das
+     * notas. O callback recebe null em caso de sucesso ou uma mensagem de erro.
+     */
+    fun loadRemoteNotes(
+        token: String,
+        userId: Int,
+        onComplete: (String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
                 repository.syncPendingCreates(
                     token = token,
                     userId = userId
@@ -293,27 +231,14 @@ class NotesViewModel(
                     userId = userId
                 )
 
-                // Depois atualiza o Room a partir da API.
                 repository.syncRemoteNotesToLocal(
                     token = token,
                     userId = userId
                 )
 
-                val result =
-                    repository.getRemoteNotes(token)
-
-                _remoteNotes.value = result
-
-                // Sincronização concluída com sucesso.
-                _remoteError.value = null
-
+                onComplete(null)
             } catch (e: Exception) {
-
-                _remoteError.value =
-                    "Não foi possível sincronizar com a API."
-
-                // Agenda nova tentativa quando houver condições.
-                SyncScheduler.scheduleSync(context)
+                onComplete("Não foi possível sincronizar com a API.")
             }
         }
     }

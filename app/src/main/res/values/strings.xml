@@ -105,25 +105,22 @@
         RecyclerView — developer.android.com/develop/ui/views/layout/recyclerview
     </string>
 
-    <string name="technology_room">
-        Room — developer.android.com/training/data-storage/room
+    <string name="technology_internal_storage">
+        Internal Storage — developer.android.com/training/data-storage/app-specific
     </string>
 
     <string name="technology_ktor_client">
         Ktor Client (OkHttp, Content Negotiation e Kotlinx JSON) — ktor.io
     </string>
 
-    <string name="technology_datastore">
-        DataStore — developer.android.com/topic/libraries/architecture/datastore
+    <string name="technology_shared_preferences">
+        SharedPreferences — developer.android.com/training/data-storage/shared-preferences
     </string>
 
     <string name="technology_biometric">
         AndroidX Biometric — developer.android.com/identity/sign-in/biometric-auth
     </string>
 
-    <string name="technology_workmanager">
-        WorkManager — developer.android.com/topic/libraries/architecture/workmanager
-    </string>
 
     <string name="technology_material">Material Components for Android — github.com/material-components/material-components-android</string>
 
@@ -228,6 +225,17 @@
     <string name="registering">
         A criar conta...
     </string>
+
+    <string name="new_note_subtitle">Registe uma nova ideia ou apontamento.</string>
+    <string name="edit_note_subtitle">Atualize o conteúdo da sua nota.</string>
+    <string name="name_required">O nome é obrigatório.</string>
+    <string name="email_required">O email é obrigatório.</string>
+    <string name="invalid_email">Email inválido.</string>
+    <string name="password_required">A palavra-passe é obrigatória.</string>
+    <string name="password_min_length">A palavra-passe deve ter pelo menos 6 caracteres.</string>
+    <string name="close">Fechar</string>
+    <string name="biometric_title">Desbloquear EasyNotes</string>
+    <string name="biometric_subtitle">Use biometria ou o código do dispositivo.</string>
     <string name="fotografia">Fotografia</string>
     <string name="pode_associar_uma_fotografia_a_esta_nota">Pode associar uma fotografia a esta nota.</string>
 

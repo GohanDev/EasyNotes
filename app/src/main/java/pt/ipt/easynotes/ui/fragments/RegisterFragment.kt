@@ -6,14 +6,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import kotlinx.coroutines.launch
 import pt.ipt.easynotes.MainActivity
 import pt.ipt.easynotes.R
 import pt.ipt.easynotes.databinding.FragmentRegisterBinding
+import pt.ipt.easynotes.ui.AuthUiState
 
+/**
+ * Fragment responsável pela criação de novas contas de utilizador.
+ */
 class RegisterFragment : Fragment() {
 
     private lateinit var binding: FragmentRegisterBinding
@@ -34,53 +34,63 @@ class RegisterFragment : Fragment() {
         activity = requireActivity() as MainActivity
 
         binding.buttonCreateAccount.setOnClickListener {
-
             val name = binding.editName.text.toString().trim()
             val email = binding.editEmail.text.toString().trim()
             val password = binding.editPassword.text.toString()
 
-            // Validar nome
-            if (name.isBlank()) {
-                showError("O nome é obrigatório.")
+            if (!validateFields(name, email, password)) {
                 return@setOnClickListener
             }
 
-            // Validar email
-            if (email.isBlank()) {
-                showError("O email é obrigatório.")
-                return@setOnClickListener
-            }
-
-            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                showError("Email inválido.")
-                return@setOnClickListener
-            }
-
-            // Validar password
-            if (password.isBlank()) {
-                showError("A palavra-passe é obrigatória.")
-                return@setOnClickListener
-            }
-
-            if (password.length < 6) {
-                showError("A palavra-passe deve ter pelo menos 6 caracteres.")
-                return@setOnClickListener
-            }
-
-            // Dados válidos - fazer registo
             activity.authViewModel.register(
                 name = name,
                 email = email,
                 password = password
-            )
+            ) { state ->
+                handleRegistrationState(state)
+            }
         }
 
         binding.buttonBack.setOnClickListener {
             activity.authViewModel.clearError()
             activity.goBack()
         }
+    }
 
-        observeRegistration()
+    /**
+     * Valida os dados antes de os enviar para a API.
+     */
+    private fun validateFields(
+        name: String,
+        email: String,
+        password: String
+    ): Boolean {
+        if (name.isBlank()) {
+            showError(getString(R.string.name_required))
+            return false
+        }
+
+        if (email.isBlank()) {
+            showError(getString(R.string.email_required))
+            return false
+        }
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            showError(getString(R.string.invalid_email))
+            return false
+        }
+
+        if (password.isBlank()) {
+            showError(getString(R.string.password_required))
+            return false
+        }
+
+        if (password.length < 6) {
+            showError(getString(R.string.password_min_length))
+            return false
+        }
+
+        return true
     }
 
     private fun showError(message: String) {
@@ -88,31 +98,27 @@ class RegisterFragment : Fragment() {
         binding.textError.visibility = View.VISIBLE
     }
 
-    private fun observeRegistration() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                activity.authViewModel.uiState.collect { state ->
+    /**
+     * Atualiza o ecrã com o resultado devolvido pelo ViewModel.
+     */
+    private fun handleRegistrationState(state: AuthUiState) {
+        binding.buttonCreateAccount.isEnabled = !state.isLoading
 
-                    binding.buttonCreateAccount.isEnabled = !state.isLoading
+        binding.buttonCreateAccount.text = if (state.isLoading) {
+            getString(R.string.registering)
+        } else {
+            getString(R.string.create_account)
+        }
 
-                    binding.buttonCreateAccount.text = if (state.isLoading) {
-                        getString(R.string.registering)
-                    } else {
-                        getString(R.string.create_account)
-                    }
+        if (state.errorMessage.isNullOrBlank()) {
+            binding.textError.visibility = View.GONE
+        } else {
+            showError(state.errorMessage)
+        }
 
-                    if (!state.errorMessage.isNullOrBlank()) {
-                        binding.textError.text = state.errorMessage
-                        binding.textError.visibility = View.VISIBLE
-                    }
-
-                    if (state.registrationSuccessful) {
-                        activity.authViewModel.clearRegistrationSuccess()
-                        activity.authViewModel.clearError()
-                        activity.goBack()
-                    }
-                }
-            }
+        if (state.registrationSuccessful) {
+            activity.authViewModel.clearError()
+            activity.goBack()
         }
     }
 }

@@ -4,14 +4,20 @@ import pt.ipt.easynotes.network.AuthService
 import pt.ipt.easynotes.network.LoginResponse
 import pt.ipt.easynotes.network.UserResponse
 
+/**
+ * Centraliza as operações de autenticação e a gestão da sessão local.
+ */
 class AuthRepository(
     private val sessionManager: SessionManager
 ) {
+
+    /**
+     * Autentica o utilizador na API e guarda localmente a sessão recebida.
+     */
     suspend fun login(
         email: String,
         password: String
     ): LoginResponse {
-
         val response = AuthService.login(
             email = email,
             password = password
@@ -27,6 +33,7 @@ class AuthRepository(
         return response
     }
 
+    // Envia para a API os dados necessários para criar uma conta.
     suspend fun register(
         name: String,
         email: String,
@@ -39,15 +46,18 @@ class AuthRepository(
         )
     }
 
-    fun getSession() = sessionManager.session
+    // Recupera a sessão guardada em SharedPreferences.
+    fun getSession(): UserSession? {
+        return sessionManager.getSession()
+    }
 
-    suspend fun logout() {
+    // Limpa a sessão guardada no dispositivo.
+    fun logout() {
         sessionManager.clearSession()
     }
 
-    suspend fun validateSession(
-        token: String
-    ): UserResponse {
+    // Confirma junto da API que o token JWT continua válido.
+    suspend fun validateSession(token: String): UserResponse {
         return AuthService.getCurrentUser(token)
     }
 }
