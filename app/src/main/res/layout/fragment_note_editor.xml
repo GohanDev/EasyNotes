@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/easy_background"
     android:fillViewport="true">
 
     <LinearLayout
@@ -24,121 +25,150 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textColor="@color/easy_text_secondary" />
+            android:textColor="@color/easy_text_secondary"
+            android:textSize="14sp" />
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:background="@drawable/bg_card"
-            android:elevation="3dp"
-            android:orientation="vertical"
-            android:padding="18dp">
+            app:cardBackgroundColor="@color/easy_surface"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="3dp"
+            app:strokeColor="@color/easy_surface_variant"
+            app:strokeWidth="1dp">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/title"
-                app:boxBackgroundMode="outline">
+                android:orientation="vertical"
+                android:padding="18dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTitle"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textCapSentences"
-                    android:singleLine="true" />
+                    android:hint="@string/title"
+                    app:boxBackgroundColor="@color/easy_surface"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/easy_blue">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:singleLine="true"
+                        android:textColor="@color/easy_text_primary"
+                        android:textColorHint="@color/easy_text_secondary" />
 
-            <TextView
-                android:id="@+id/textTitleError"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/title_required"
-                android:textColor="@color/easy_error"
-                android:visibility="gone" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:hint="@string/content"
-                app:boxBackgroundMode="outline">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editContent"
+                <TextView
+                    android:id="@+id/textTitleError"
                     android:layout_width="match_parent"
-                    android:layout_height="180dp"
-                    android:gravity="top|start"
-                    android:inputType="textCapSentences|textMultiLine"
-                    android:padding="12dp" />
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/title_required"
+                    android:textColor="@color/easy_error"
+                    android:visibility="gone" />
 
-            </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/content"
+                    app:boxBackgroundColor="@color/easy_surface"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/easy_blue">
 
-            <TextView
-                android:id="@+id/textContentError"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/content_required"
-                android:textColor="@color/easy_error"
-                android:visibility="gone" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:gravity="top|start"
+                        android:inputType="textCapSentences|textMultiLine"
+                        android:padding="12dp"
+                        android:textColor="@color/easy_text_primary"
+                        android:textColorHint="@color/easy_text_secondary" />
 
-        </LinearLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <LinearLayout
+                <TextView
+                    android:id="@+id/textContentError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/content_required"
+                    android:textColor="@color/easy_error"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:background="@drawable/bg_secondary"
-            android:orientation="vertical"
-            android:padding="18dp">
+            app:cardBackgroundColor="@color/easy_surface_variant"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="1dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/fotografia"
-                android:textColor="@color/easy_blue_dark"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/pode_associar_uma_fotografia_a_esta_nota"
-                android:textColor="@color/easy_text_secondary" />
-
-            <ImageView
-                android:id="@+id/imagePhoto"
-                android:layout_width="match_parent"
-                android:layout_height="220dp"
-                android:layout_marginTop="14dp"
-                android:contentDescription="@string/note_photo"
-                android:scaleType="centerCrop"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/buttonCamera"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="14dp"
-                android:backgroundTint="@color/easy_blue"
-                android:text="@string/take_photo"
-                android:textAllCaps="false"
-                android:textColor="@color/white" />
-
-            <TextView
-                android:id="@+id/textCameraError"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/camera_permission_required"
-                android:textColor="@color/easy_error"
-                android:visibility="gone" />
+                android:orientation="vertical"
+                android:padding="18dp">
 
-        </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/fotografia"
+                    android:textColor="@color/easy_blue_dark"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/pode_associar_uma_fotografia_a_esta_nota"
+                    android:textColor="@color/easy_text_secondary"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:id="@+id/imagePhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@color/easy_surface"
+                    android:contentDescription="@string/note_photo"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonCamera"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/take_photo"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/easy_blue"
+                    app:cornerRadius="12dp" />
+
+                <TextView
+                    android:id="@+id/textCameraError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/camera_permission_required"
+                    android:textColor="@color/easy_error"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -146,42 +176,45 @@
             android:layout_marginTop="20dp"
             android:orientation="horizontal">
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonBack"
                 android:layout_width="0dp"
                 android:layout_height="52dp"
                 android:layout_weight="1"
-                android:backgroundTint="@color/easy_surface_variant"
                 android:text="@string/back"
                 android:textAllCaps="false"
-                android:textColor="@color/easy_blue_dark" />
+                android:textColor="@color/easy_blue_dark"
+                app:backgroundTint="@color/easy_surface_variant"
+                app:cornerRadius="12dp" />
 
             <Space
                 android:layout_width="12dp"
                 android:layout_height="1dp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSave"
                 android:layout_width="0dp"
                 android:layout_height="52dp"
                 android:layout_weight="1"
-                android:backgroundTint="@color/easy_blue"
                 android:text="@string/save"
                 android:textAllCaps="false"
-                android:textColor="@color/white" />
+                android:textColor="@color/white"
+                app:backgroundTint="@color/easy_blue"
+                app:cornerRadius="12dp" />
 
         </LinearLayout>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonDelete"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="14dp"
-            android:backgroundTint="#FFFFDAD6"
             android:text="@string/delete"
             android:textAllCaps="false"
             android:textColor="@color/easy_error"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:backgroundTint="#FDECEA"
+            app:cornerRadius="12dp" />
 
     </LinearLayout>
 

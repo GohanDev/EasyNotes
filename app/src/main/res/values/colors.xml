@@ -1,15 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="easy_blue">#3D6AF2</color>
-    <color name="easy_blue_dark">#2447B8</color>
-    <color name="easy_purple">#7A4DF5</color>
-    <color name="easy_yellow">#F4C542</color>
-    <color name="easy_background">#F6F8FF</color>
+
+    <!-- Cor principal -->
+    <color name="easy_blue">#256D68</color>
+
+    <!-- Variante escura -->
+    <color name="easy_blue_dark">#1B4D49</color>
+
+    <!-- Cor secundária -->
+    <color name="easy_purple">#8B5E3C</color>
+
+    <!-- Destaque -->
+    <color name="easy_yellow">#E6A756</color>
+
+    <!-- Fundo geral -->
+    <color name="easy_background">#F7F7F2</color>
+
+    <!-- Cards e superfícies -->
     <color name="easy_surface">#FFFFFF</color>
-    <color name="easy_surface_variant">#E9EEFF</color>
-    <color name="easy_text_primary">#1B1F2A</color>
-    <color name="easy_text_secondary">#60697A</color>
-    <color name="easy_error">#BA1A1A</color>
+
+    <!-- Superfícies secundárias -->
+    <color name="easy_surface_variant">#E4ECE9</color>
+
+    <!-- Texto -->
+    <color name="easy_text_primary">#202624</color>
+    <color name="easy_text_secondary">#68736F</color>
+
+    <!-- Erros -->
+    <color name="easy_error">#B3261E</color>
+
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+
 </resources>

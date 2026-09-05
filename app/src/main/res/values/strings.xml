@@ -239,4 +239,6 @@
     <string name="fotografia">Fotografia</string>
     <string name="pode_associar_uma_fotografia_a_esta_nota">Pode associar uma fotografia a esta nota.</string>
 
+    <string name="_0_notas">0 notas</string>
+    <string name="plus">+</string>
 </resources>
