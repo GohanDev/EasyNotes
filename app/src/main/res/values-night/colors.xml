@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="easy_blue">#7FC7C2</color>
+    <color name="easy_blue_dark">#A7DDD8</color>
+    <color name="easy_purple">#D6A97C</color>
+    <color name="easy_yellow">#E6A756</color>
+
+    <color name="easy_background">#121715</color>
+    <color name="easy_surface">#1B211F</color>
+    <color name="easy_surface_variant">#27302D</color>
+
+    <color name="easy_text_primary">#F2F5F4</color>
+    <color name="easy_text_secondary">#B7C1BD</color>
+
+    <color name="easy_error">#FFB4AB</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>
